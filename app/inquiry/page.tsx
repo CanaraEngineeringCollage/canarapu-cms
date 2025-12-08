@@ -13,10 +13,13 @@ import {
   collection,
   query,
   orderBy,
-  onSnapshot,
+  limit,
+  startAfter,
+  getDocs,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
+import Pagination from "@/components/ui/Pagination";
 
 interface InquiryItem {
   id: string;
@@ -35,29 +38,97 @@ const InquiryPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Fetch Inquiries
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageCursors, setPageCursors] = useState<any[]>([]);
+
+  // ------------------------------
+  // 1️⃣ Get total count once
+  // ------------------------------
   useEffect(() => {
-    const q = query(collection(db, "inquiry"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const items = snapshot.docs.map((d) => ({
-          id: d.id,
-          ...d.data(),
-        })) as InquiryItem[];
-        setInquiries(items);
-        setLoading(false);
-      },
-      (error) => {
-        console.error(error);
-        toast.error("Failed to load inquiries");
-        setLoading(false);
+    async function fetchCount() {
+      const snapshot = await getDocs(collection(db, "inquiry"));
+      const totalItems = snapshot.size;
+      setTotalPages(Math.ceil(totalItems / rowsPerPage));
+    }
+
+    fetchCount();
+  }, [rowsPerPage]);
+
+  // ------------------------------
+  // 2️⃣ Fetch specific page
+  // ------------------------------
+  async function fetchPage(page: number) {
+    setLoading(true);
+
+    try {
+      let q;
+
+      if (page === 1) {
+        // First page, no cursor
+        q = query(
+          collection(db, "inquiry"),
+          orderBy("createdAt", "desc"),
+          limit(rowsPerPage)
+        );
+      } else {
+        const cursor = pageCursors[page - 2];
+        if (!cursor) return;
+
+        q = query(
+          collection(db, "inquiry"),
+          orderBy("createdAt", "desc"),
+          startAfter(cursor),
+          limit(rowsPerPage)
+        );
       }
-    );
 
-    return () => unsubscribe();
-  }, []);
+      const snapshot = await getDocs(q);
 
+      const items = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      })) as InquiryItem[];
+
+      setInquiries(items);
+
+      const lastVisible = snapshot.docs[snapshot.docs.length - 1];
+      if (lastVisible) {
+        const newCursors = [...pageCursors];
+        newCursors[page - 1] = lastVisible;
+        setPageCursors(newCursors);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load inquiries");
+    }
+
+    setLoading(false);
+  }
+
+  // Load when page or rowsPerPage changes
+  useEffect(() => {
+    fetchPage(currentPage);
+  }, [currentPage, rowsPerPage]);
+
+  // ------------------------------
+  // Pagination callbacks
+  // ------------------------------
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleRowsPerPageChange = (rows: number) => {
+    setRowsPerPage(rows);
+    setCurrentPage(1);
+    setPageCursors([]);
+  };
+
+  // ------------------------------
+  // 3️⃣ Apply search filtering on the CURRENT PAGE
+  // ------------------------------
   const filteredInquiries = inquiries.filter((item) =>
     searchTerm.trim()
       ? item.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -108,61 +179,29 @@ const InquiryPage = () => {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-muted/50">
-                  <th className="border p-3 text-left font-semibold">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      Full Name
-                    </div>
-                  </th>
-                  <th className="border p-3 text-left font-semibold">
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      Email
-                    </div>
-                  </th>
-                  <th className="border p-3 text-left font-semibold">
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4" />
-                      Phone Number
-                    </div>
-                  </th>
-                  <th className="border p-3 text-left font-semibold">
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4" />
-                      Comments
-                    </div>
-                  </th>
-                  <th className="border p-3 text-left font-semibold">
-                    Date
-                  </th>
+                  <th className="border p-3">Full Name</th>
+                  <th className="border p-3">Email</th>
+                  <th className="border p-3">Phone</th>
+                  <th className="border p-3">Comments</th>
+                  <th className="border p-3">Date</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredInquiries.map((item) => (
-                  <tr key={item.id} className="hover:bg-muted/30 transition-colors">
+                  <tr key={item.id} className="hover:bg-muted/30 text-center transition-colors">
+                    <td className="border p-3 font-medium">{item.fullName}</td>
                     <td className="border p-3">
-                      <span className="font-medium">{item.fullName}</span>
-                    </td>
-                    <td className="border p-3">
-                      <a
-                        href={`mailto:${item.email}`}
-                        className="text-blue-600 hover:underline"
-                      >
+                      <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">
                         {item.email}
                       </a>
                     </td>
                     <td className="border p-3">
-                      <a
-                        href={`tel:${item.phoneNumber}`}
-                        className="text-blue-600 hover:underline"
-                      >
+                      <a href={`tel:${item.phoneNumber}`} className="text-blue-600 hover:underline">
                         {item.phoneNumber}
                       </a>
                     </td>
-                    <td className="border p-3">
-                      <p className="text-sm text-muted-foreground max-w-md">
-                        {item.comments}
-                      </p>
+                    <td className="border p-3 text-sm text-muted-foreground max-w-md">
+                      {item.comments}
                     </td>
                     <td className="border p-3 text-sm text-muted-foreground">
                       {item.createdAt?.seconds
@@ -177,13 +216,15 @@ const InquiryPage = () => {
         </div>
       )}
 
-      {/* Total Count */}
-      {!loading && filteredInquiries.length > 0 && (
-        <div className="text-sm text-muted-foreground">
-          Showing {filteredInquiries.length} {filteredInquiries.length === 1 ? 'inquiry' : 'inquiries'}
-          {searchTerm && ` matching "${searchTerm}"`}
-        </div>
-      )}
+      {/* Pagination Component */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        rowsPerPage={rowsPerPage}
+        onPageChange={handlePageChange}
+        onRowsPerPageChange={handleRowsPerPageChange}
+      />
+
     </div>
   );
 };

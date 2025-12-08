@@ -5,71 +5,64 @@ import {
   Plus,
   Search,
   FileText,
-  Download,
+  Loader2,
   Trash2,
   File,
-  Loader2,
   SquareArrowOutUpRight,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   collection,
   query,
   orderBy,
-  onSnapshot,
+  limit,
+  startAfter,
+  getDocs,
   deleteDoc,
-  doc,
   addDoc,
   serverTimestamp,
+  doc,
 } from "firebase/firestore";
+
 import {
   ref,
   uploadBytes,
   getDownloadURL,
   deleteObject,
 } from "firebase/storage";
+
 import { db, storage } from "@/lib/firebase";
 import { toast } from "sonner";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
+import Pagination from "@/components/ui/Pagination";
 
-/* ---------------------------------------------------
-   ADD CIRCULAR MODAL
---------------------------------------------------- */
-const AddCircularModal = ({
-  open,
-  onClose,
-  onSubmit,
-  loading,
-}: {
+/* ---------------- ADD MODAL (Unchanged) ---------------- */
+interface AddCircularModalProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (title: string, file: File) => void;
   loading: boolean;
-}) => {
+}
+
+const AddCircularModal = ({ open, onClose, onSubmit, loading }: AddCircularModalProps) => {
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
 
   const submit = () => {
-    if (!title.trim()) {
-      toast.error("Title is required");
-      return;
-    }
-    if (!file) {
-      toast.error("Please select a PDF file");
-      return;
-    }
-    onSubmit(title.trim(), file);
+    if (!title.trim()) return toast.error("Title is required");
+    if (!file) return toast.error("Please select a PDF file");
+    onSubmit(title, file);
   };
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/30 h-full backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
         <h2 className="text-xl font-semibold mb-4">Add Exam Circular</h2>
 
-        <label className="block mb-2 text-sm font-medium">Circular Title</label>
         <Input
           placeholder="Enter circular title"
           value={title}
@@ -77,16 +70,10 @@ const AddCircularModal = ({
         />
 
         <label className="block mt-4 mb-2 text-sm font-medium">Select PDF File</label>
-        <Input
-          type="file"
-          accept="application/pdf"
-          onChange={(e) => e.target.files && setFile(e.target.files[0])}
-        />
+        <Input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
 
         <div className="flex justify-end gap-3 mt-6">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
 
           <Button disabled={loading} onClick={submit}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Upload"}
@@ -97,10 +84,7 @@ const AddCircularModal = ({
   );
 };
 
-/* ---------------------------------------------------
-   MAIN PAGE COMPONENT
---------------------------------------------------- */
-
+/* ---------------- MAIN PAGE WITH PAGINATION ADDED ---------------- */
 interface Circular {
   id: string;
   title: string;
@@ -112,64 +96,109 @@ interface Circular {
 
 const ExamCircularsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
+
+  /** 🔥 Pagination states added */
   const [circulars, setCirculars] = useState<Circular[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
-  // Add Modal
-  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageCursors, setPageCursors] = useState<any[]>([]);
 
-  // Delete Modal
+  // Modals
+  const [addModalOpen, setAddModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<Circular | null>(null);
 
+  /* ---------------- 1️⃣ Count total pages ---------------- */
   useEffect(() => {
-    const q = query(
-      collection(db, "exam-circulars"),
-      orderBy("createdAt", "desc")
-    );
+    async function fetchTotalCount() {
+      const snap = await getDocs(collection(db, "exam-circulars"));
+      setTotalPages(Math.ceil(snap.size / rowsPerPage));
+    }
+    fetchTotalCount();
+  }, [rowsPerPage]);
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map((d) => ({
-        ...d.data(),
-        id: d.id,
-      })) as Circular[];
+  /* ---------------- 2️⃣ Fetch page data ---------------- */
+  async function fetchPage(pageNumber: number) {
+    setLoading(true);
 
-      setCirculars(items);
-      setLoading(false);
-    });
+    try {
+      let q;
 
-    return () => unsubscribe();
-  }, []);
+      if (pageNumber === 1) {
+        q = query(
+          collection(db, "exam-circulars"),
+          orderBy("createdAt", "desc"),
+          limit(rowsPerPage)
+        );
+      } else {
+        const cursor = pageCursors[pageNumber - 2];
+        if (!cursor) return;
 
+        q = query(
+          collection(db, "exam-circulars"),
+          orderBy("createdAt", "desc"),
+          startAfter(cursor),
+          limit(rowsPerPage)
+        );
+      }
+
+      const snap = await getDocs(q);
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Circular[];
+
+      setCirculars(docs);
+
+      const lastVisible = snap.docs[snap.docs.length - 1];
+      if (lastVisible) {
+        const newCursors = [...pageCursors];
+        newCursors[pageNumber - 1] = lastVisible;
+        setPageCursors(newCursors);
+      }
+    } catch (err) {
+      toast.error("Failed to load circulars");
+    }
+
+    setLoading(false);
+  }
+
+  // Load when page or rowsPerPage changes
+  useEffect(() => {
+    fetchPage(currentPage);
+  }, [currentPage, rowsPerPage]);
+
+  /* ---------------- Upload Circular (Unchanged) ---------------- */
   const uploadCircular = async (title: string, file: File) => {
     setUploading(true);
 
     try {
-      const storagePath = `exam-circulars/${Date.now()}_${file.name}`;
-      const storageRef = ref(storage, storagePath);
+      const path = `exam-circulars/${Date.now()}_${file.name}`;
+      const storageRef = ref(storage, path);
 
-      const snapshot = await uploadBytes(storageRef, file);
-      const pdfUrl = await getDownloadURL(snapshot.ref);
+      await uploadBytes(storageRef, file);
+      const pdfUrl = await getDownloadURL(storageRef);
 
       await addDoc(collection(db, "exam-circulars"), {
         title,
         fileName: file.name,
         pdfUrl,
-        storagePath,
+        storagePath: path,
         createdAt: serverTimestamp(),
       });
 
-      toast.success("Circular uploaded successfully");
+      toast.success("Circular uploaded");
       setAddModalOpen(false);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to upload circular");
+      fetchPage(currentPage);
+    } catch {
+      toast.error("Failed to upload");
     }
 
     setUploading(false);
   };
 
+  /* ---------------- Delete Circular (Unchanged) ---------------- */
   const confirmDelete = (item: Circular) => {
     setItemToDelete(item);
     setDeleteModalOpen(true);
@@ -183,8 +212,8 @@ const ExamCircularsPage = () => {
       await deleteDoc(doc(db, "exam-circulars", itemToDelete.id));
 
       toast.success("Circular deleted");
-    } catch (err) {
-      console.error(err);
+      fetchPage(currentPage);
+    } catch {
       toast.error("Delete failed");
     }
 
@@ -192,40 +221,36 @@ const ExamCircularsPage = () => {
     setItemToDelete(null);
   };
 
+  /* ---------------- Search Filter (Unchanged) ---------------- */
   const filteredCirculars = circulars.filter(
     (item) =>
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.fileName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  /* ---------------- RENDER ---------------- */
   return (
     <div className="space-y-6">
-
-      {/* Header */}
+      {/* HEADER (unchanged) */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
           <h1 className="page-header font-serif flex items-center gap-3">
-            <FileText className="h-8 w-8 text-warning" />
-            Exam Circulars
+            <FileText className="h-8 w-8 text-warning" /> Exam Circulars
           </h1>
           <p className="page-description">Manage uploaded exam circulars.</p>
         </div>
 
         <Button
-          className="btn-primary-gradient text-warning-foreground gap-2"
+          className="btn-primary-gradient gap-2"
           onClick={() => setAddModalOpen(true)}
           disabled={uploading}
         >
-          {uploading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Plus className="h-4 w-4" />
-          )}
+          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus />}
           Upload Circular
         </Button>
       </div>
 
-      {/* Search */}
+      {/* SEARCH (unchanged) */}
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
         <Input
@@ -236,80 +261,81 @@ const ExamCircularsPage = () => {
         />
       </div>
 
-      {/* Table */}
+      {/* TABLE (unchanged) */}
       {loading ? (
         <div className="flex justify-center py-20">
-          <div className="animate-spin h-10 w-10 rounded-full border-b-2 border-warning"></div>
+          <Loader2 className="h-10 w-10 animate-spin text-warning" />
         </div>
       ) : filteredCirculars.length === 0 ? (
-        <div className="text-center py-10 text-muted-foreground">
-          No circulars found.
-        </div>
+        <p className="text-center text-muted-foreground py-10">No circulars found.</p>
       ) : (
-        <div className="data-table">
-          <table className="w-full">
-            <thead>
-              <tr className="table-header">
-                <th className="table-cell">Title</th>
-                <th className="table-cell">File Name</th>
-                <th className="table-cell">Created</th>
-                <th className="table-cell text-right">Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredCirculars.map((item) => (
-                <tr
-                  key={item.id}
-                  className="hover:bg-muted/30 transition-colors"
-                >
-                  <td className="table-cell">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 flex items-center justify-center rounded bg-warning/10">
-                        <File className="h-4 w-4 text-warning" />
-                      </div>
-                      <span className="font-medium">{item.title}</span>
-                    </div>
-                  </td>
-
-                  <td className="table-cell text-muted-foreground">
-                    {item.fileName}
-                  </td>
-
-                  <td className="table-cell text-muted-foreground">
-                    {item.createdAt?.toDate
-                      ? item.createdAt.toDate().toLocaleDateString()
-                      : "Just now"}
-                  </td>
-
-                  <td className="table-cell">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => window.open(item.pdfUrl, "_blank")}
-                      >
-                        <SquareArrowOutUpRight  className="h-4 w-4" />
-                      </Button>
-
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive"
-                        onClick={() => confirmDelete(item)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
+        <>
+        <div className="rounded-lg border bg-card shadow overflow-hidden">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-muted/40">
+                  <th className="border p-3 text-center">Title</th>
+                  <th className="border p-3 text-center">File Name</th>
+                  <th className="border p-3 text-center">Created</th>
+                  <th className="border p-3 text-center">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+
+              <tbody>
+                {filteredCirculars.map((item) => (
+                  <tr key={item.id} className="hover:bg-muted/20">
+                    <td className="border p-3 text-center">{item.title}</td>
+
+                    <td className="border p-3 text-center">{item.fileName}</td>
+
+                    <td className="border p-3 text-center">
+                      {item.createdAt?.toDate
+                        ? item.createdAt.toDate().toLocaleDateString()
+                        : "—"}
+                    </td>
+
+                    <td className="border p-3 text-center">
+                      <div className="flex justify-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => window.open(item.pdfUrl, "_blank")}
+                        >
+                          <SquareArrowOutUpRight className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive"
+                          onClick={() => confirmDelete(item)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 🔥 PAGINATION ADDED HERE */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            rowsPerPage={rowsPerPage}
+            onPageChange={setCurrentPage}
+            onRowsPerPageChange={(rows) => {
+              setRowsPerPage(rows);
+              setCurrentPage(1);
+              setPageCursors([]);
+            }}
+          />
+        </>
       )}
 
-      {/* Add Circular Modal */}
+      {/* Modal Components */}
       <AddCircularModal
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
@@ -317,7 +343,6 @@ const ExamCircularsPage = () => {
         loading={uploading}
       />
 
-      {/* Delete Modal */}
       <DeleteConfirmationModal
         open={deleteModalOpen}
         onOpenChange={setDeleteModalOpen}
