@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Plus, Search, FileQuestion, Download, Trash2, File, Loader2 } from 'lucide-react';
+import { Plus, Search, FileQuestion, Download, Trash2, File, Loader2, SquareArrowOutUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -266,8 +266,8 @@ const QuestionBankPage = () => {
                   className="flex-1"
                   onClick={() => window.open(item.pdfUrl, "_blank")}
                 >
-                  <Download className="h-4 w-4" />
-                  Download
+                  <SquareArrowOutUpRight className="h-4 w-4" />
+                  Open
                 </Button>
 
                 <Button

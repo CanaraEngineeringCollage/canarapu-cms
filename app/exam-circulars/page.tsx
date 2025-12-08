@@ -9,6 +9,7 @@ import {
   Trash2,
   File,
   Loader2,
+  SquareArrowOutUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -288,7 +289,7 @@ const ExamCircularsPage = () => {
                         size="icon"
                         onClick={() => window.open(item.pdfUrl, "_blank")}
                       >
-                        <Download className="h-4 w-4" />
+                        <SquareArrowOutUpRight  className="h-4 w-4" />
                       </Button>
 
                       <Button
