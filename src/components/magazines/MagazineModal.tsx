@@ -13,27 +13,27 @@ import { Loader2 } from 'lucide-react';
 interface MagazineModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editItem?: { id: string; name: string; url: string } | null;
+  editItem?: { id: string; url: string } | null;
   onSuccess?: () => void;
 }
 
 export const MagazineModal = ({ open, onOpenChange, editItem, onSuccess }: MagazineModalProps) => {
-  const [name, setName] = useState('');
+
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (editItem) {
-      setName(editItem.name);
+      
       setUrl(editItem.url);
     } else {
-      setName('');
+ 
       setUrl('');
     }
   }, [editItem, open]);
 
   const handleSubmit = async () => {
-    if (!name || !url) {
+    if (!url) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -43,7 +43,6 @@ export const MagazineModal = ({ open, onOpenChange, editItem, onSuccess }: Magaz
       if (editItem) {
         // Update
         await updateDoc(doc(db, 'magazines', editItem.id), {
-          name,
           url,
           updatedAt: serverTimestamp(),
         });
@@ -51,7 +50,7 @@ export const MagazineModal = ({ open, onOpenChange, editItem, onSuccess }: Magaz
       } else {
         // Create
         await addDoc(collection(db, 'magazines'), {
-          name,
+         
           url,
           createdAt: serverTimestamp(),
         });
@@ -70,7 +69,7 @@ export const MagazineModal = ({ open, onOpenChange, editItem, onSuccess }: Magaz
 
   const resetForm = () => {
     if (!editItem) {
-        setName('');
+       
         setUrl('');
     }
   };
@@ -82,14 +81,6 @@ export const MagazineModal = ({ open, onOpenChange, editItem, onSuccess }: Magaz
           <DialogTitle>{editItem ? 'Edit Magazine' : 'Add Magazine'}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label>Magazine Name</Label>
-            <Input 
-              value={name} 
-              onChange={(e) => setName(e.target.value)} 
-              placeholder="e.g. Annual Magazine 2024"
-            />
-          </div>
           <div className="space-y-2">
             <Label>Magazine URL</Label>
             <Input 

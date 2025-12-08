@@ -230,6 +230,7 @@ const ExamCircularsPage = () => {
 
   /* ---------------- RENDER ---------------- */
   return (
+    <div>
     <div className="space-y-6">
       {/* HEADER (unchanged) */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -336,12 +337,7 @@ const ExamCircularsPage = () => {
       )}
 
       {/* Modal Components */}
-      <AddCircularModal
-        open={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onSubmit={uploadCircular}
-        loading={uploading}
-      />
+   
 
       <DeleteConfirmationModal
         open={deleteModalOpen}
@@ -349,6 +345,13 @@ const ExamCircularsPage = () => {
         onConfirm={deleteCircular}
         title="Delete Circular"
         description={`Are you sure you want to delete "${itemToDelete?.title}"?`}
+      />
+    </div>
+       <AddCircularModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSubmit={uploadCircular}
+        loading={uploading}
       />
     </div>
   );

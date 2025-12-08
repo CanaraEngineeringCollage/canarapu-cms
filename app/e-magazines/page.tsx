@@ -33,7 +33,6 @@ const EMagazinesPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<{
     id: string;
-    name: string;
     url: string;
   } | null>(null);
 
@@ -61,7 +60,7 @@ const EMagazinesPage = () => {
   const handleCreateOrEdit = () => {
     setEditItem(
       magazine
-        ? { id: magazine.id, name: magazine.name, url: magazine.url }
+        ? { id: magazine.id, url: magazine.url }
         : null
     );
     setIsDialogOpen(true);

@@ -251,6 +251,7 @@ const QuestionBankPage = () => {
      UI Rendering (TABLE View)
   ------------------------------------------ */
   return (
+    <div>
     <div className="space-y-6">
 
       {/* Header */}
@@ -359,12 +360,7 @@ const QuestionBankPage = () => {
       )}
 
       {/* Upload Modal */}
-      <AddQuestionPaperModal
-        open={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onSubmit={uploadQuestionPaper}
-        loading={uploading}
-      />
+  
 
       {/* Delete Modal */}
       <DeleteConfirmationModal
@@ -373,6 +369,13 @@ const QuestionBankPage = () => {
         onConfirm={handleDelete}
         title="Delete Question Paper"
         description={`Are you sure you want to delete "${itemToDelete?.fileName}"?`}
+      />
+    </div>
+        <AddQuestionPaperModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSubmit={uploadQuestionPaper}
+        loading={uploading}
       />
     </div>
   );
