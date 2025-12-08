@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { Megaphone, Calendar, FileQuestion, FileText, BookOpen } from 'lucide-react';
+import { Megaphone, Calendar, FileQuestion, FileText, BookOpen, MessageSquare } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { QuickActions } from '@/components/dashboard/QuickActions';
@@ -15,6 +15,7 @@ export default function Dashboard() {
   const [examCircularsCount, setExamCircularsCount] = useState(0);
   const [magazinesCount, setMagazinesCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [inquiryCount, setInquiryCount] = useState(0);
 
   // Fetch Buzz count
   useEffect(() => {
@@ -22,6 +23,15 @@ export default function Dashboard() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setBuzzCount(snapshot.docs.length);
       setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch Inquiry count
+  useEffect(() => {
+    const q = query(collection(db, "inquiry"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setInquiryCount(snapshot.docs.length);
     });
     return () => unsubscribe();
   }, []);
@@ -74,6 +84,12 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+         <StatCard
+          title="Total Inquiry"
+          value={loading ? 0 : inquiryCount}
+          icon={MessageSquare}
+          variant="primary"
+        />
         <StatCard
           title="Total Buzz"
           value={loading ? 0 : buzzCount}
