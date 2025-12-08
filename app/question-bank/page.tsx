@@ -1,56 +1,61 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Plus, Search, FileQuestion, Download, Trash2, File, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useState, useEffect } from "react";
+import {
+  Plus,
+  Search,
+  FileQuestion,
+  Trash2,
+  File,
+  Loader2,
+  SquareArrowOutUpRight,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
 import {
   collection,
   query,
   orderBy,
-  onSnapshot,
+  limit,
+  startAfter,
+  getDocs,
   deleteDoc,
-  doc,
   addDoc,
-  serverTimestamp
-} from 'firebase/firestore';
+  serverTimestamp,
+  doc,
+} from "firebase/firestore";
+
 import {
   ref,
   uploadBytes,
   getDownloadURL,
-  deleteObject
-} from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
-import { toast } from 'sonner';
-import { DeleteConfirmationModal } from '@/components/ui/delete-confirmation-modal';
+  deleteObject,
+} from "firebase/storage";
+
+import { db, storage } from "@/lib/firebase";
+import { toast } from "sonner";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
+import Pagination from "@/components/ui/Pagination";
 
 /* --------------------------------------------------
-   Modal for Adding Question Paper
+   Add Question Paper Modal
 -------------------------------------------------- */
-const AddQuestionPaperModal = ({
-  open,
-  onClose,
-  onSubmit,
-  loading
-}: {
+interface AddQuestionPaperModalProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (subject: string, file: File) => void;
   loading: boolean;
-}) => {
+}
+
+const AddQuestionPaperModal = ({ open, onClose, onSubmit, loading }: AddQuestionPaperModalProps) => {
   const [subjectName, setSubjectName] = useState("");
   const [file, setFile] = useState<File | null>(null);
 
   const handleUpload = () => {
-    if (!subjectName.trim()) {
-      toast.error("Subject name is required.");
-      return;
-    }
-    if (!file) {
-      toast.error("Select a PDF file.");
-      return;
-    }
-
+    if (!subjectName.trim()) return toast.error("Subject name is required.");
+    if (!file) return toast.error("Select a PDF file.");
     onSubmit(subjectName.trim(), file);
   };
 
@@ -61,7 +66,6 @@ const AddQuestionPaperModal = ({
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
         <h2 className="text-xl font-semibold mb-4">Add Question Paper</h2>
 
-        {/* Subject Name */}
         <label className="block mb-2 text-sm font-medium">Subject Name</label>
         <Input
           placeholder="Enter subject name"
@@ -69,12 +73,11 @@ const AddQuestionPaperModal = ({
           onChange={(e) => setSubjectName(e.target.value)}
         />
 
-        {/* PDF Upload */}
         <label className="block mt-4 mb-2 text-sm font-medium">Select PDF File</label>
         <Input
           type="file"
           accept="application/pdf"
-          onChange={(e) => e.target.files && setFile(e.target.files[0])}
+          onChange={(e) => setFile(e.target.files?.[0] || null)}
         />
 
         <div className="flex justify-end gap-3 mt-6">
@@ -83,11 +86,7 @@ const AddQuestionPaperModal = ({
           </Button>
 
           <Button onClick={handleUpload} disabled={loading}>
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              "Upload"
-            )}
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Upload"}
           </Button>
         </div>
       </div>
@@ -96,9 +95,8 @@ const AddQuestionPaperModal = ({
 };
 
 /* --------------------------------------------------
-   Main Page Component
+   Main Page
 -------------------------------------------------- */
-
 interface QuestionPaper {
   id: string;
   subjectName: string;
@@ -109,43 +107,94 @@ interface QuestionPaper {
 }
 
 const QuestionBankPage = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+
+  /* Pagination States */
   const [papers, setPapers] = useState<QuestionPaper[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
-  // Add Modal
-  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageCursors, setPageCursors] = useState<any[]>([]);
 
-  // Delete Modal
+  /* Modals */
+  const [addModalOpen, setAddModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<QuestionPaper | null>(null);
 
-  /* Fetch Papers */
+  /* ------------------------------------------
+     Count total documents
+  ------------------------------------------ */
   useEffect(() => {
-    const q = query(collection(db, 'question-papers'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as QuestionPaper[];
+    async function getCount() {
+      const snap = await getDocs(collection(db, "question-papers"));
+      setTotalPages(Math.ceil(snap.size / rowsPerPage));
+    }
+    getCount();
+  }, [rowsPerPage]);
 
-      setPapers(items);
-      setLoading(false);
-    });
+  /* ------------------------------------------
+     Fetch Page
+  ------------------------------------------ */
+  async function fetchPage(pageNumber: number) {
+    setLoading(true);
 
-    return () => unsubscribe();
-  }, []);
+    try {
+      let q;
 
-  /* Upload Handler */
+      if (pageNumber === 1) {
+        q = query(
+          collection(db, "question-papers"),
+          orderBy("createdAt", "desc"),
+          limit(rowsPerPage)
+        );
+      } else {
+        const cursor = pageCursors[pageNumber - 2];
+        if (!cursor) return;
+        q = query(
+          collection(db, "question-papers"),
+          orderBy("createdAt", "desc"),
+          startAfter(cursor),
+          limit(rowsPerPage)
+        );
+      }
+
+      const snap = await getDocs(q);
+      const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as QuestionPaper[];
+
+      setPapers(docs);
+
+      const lastVisible = snap.docs[snap.docs.length - 1];
+      if (lastVisible) {
+        const newCursors = [...pageCursors];
+        newCursors[pageNumber - 1] = lastVisible;
+        setPageCursors(newCursors);
+      }
+    } catch (err) {
+      toast.error("Failed to load papers");
+    }
+
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    fetchPage(currentPage);
+  }, [currentPage, rowsPerPage]);
+
+  /* ------------------------------------------
+     Upload Paper
+  ------------------------------------------ */
   const uploadQuestionPaper = async (subject: string, file: File) => {
     setUploading(true);
+
     try {
       const storagePath = `question-bank/${Date.now()}_${file.name}`;
       const storageRef = ref(storage, storagePath);
 
-      const snap = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(snap.ref);
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
 
       await addDoc(collection(db, "question-papers"), {
         subjectName: subject,
@@ -155,18 +204,19 @@ const QuestionBankPage = () => {
         createdAt: serverTimestamp(),
       });
 
-      toast.success("Question paper uploaded successfully");
+      toast.success("Uploaded successfully");
       setAddModalOpen(false);
-
-    } catch (err) {
-      console.error(err);
+      fetchPage(currentPage);
+    } catch {
       toast.error("Upload failed");
     }
 
     setUploading(false);
   };
 
-  /* Delete Handler */
+  /* ------------------------------------------
+     Delete Paper
+  ------------------------------------------ */
   const confirmDelete = (item: QuestionPaper) => {
     setItemToDelete(item);
     setDeleteModalOpen(true);
@@ -178,28 +228,33 @@ const QuestionBankPage = () => {
     try {
       await deleteObject(ref(storage, itemToDelete.storagePath));
       await deleteDoc(doc(db, "question-papers", itemToDelete.id));
-
       toast.success("Deleted successfully");
-    } catch (err) {
-      console.error(err);
-      toast.error("Delete failed");
+      fetchPage(currentPage);
+    } catch {
+      toast.error("Failed to delete");
     }
 
     setDeleteModalOpen(false);
     setItemToDelete(null);
   };
 
-  /* Search Filter */
-  const filteredPapers = papers.filter(paper =>
-    paper.subjectName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    paper.fileName.toLowerCase().includes(searchQuery.toLowerCase())
+  /* ------------------------------------------
+     Search Filter
+  ------------------------------------------ */
+  const filteredPapers = papers.filter(
+    (p) =>
+      p.subjectName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.fileName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  /* ------------------------------------------
+     UI Rendering (TABLE View)
+  ------------------------------------------ */
   return (
     <div className="space-y-6">
 
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+      {/* Header */}
+      <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
           <h1 className="page-header font-serif flex items-center gap-3">
             <FileQuestion className="h-8 w-8 text-success" />
@@ -209,15 +264,11 @@ const QuestionBankPage = () => {
         </div>
 
         <Button
-          className="btn-primary-gradient gap-2"
           onClick={() => setAddModalOpen(true)}
           disabled={uploading}
+          className="btn-primary-gradient gap-2"
         >
-          {uploading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Plus className="h-4 w-4" />
-          )}
+          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus />}
           Upload Question Paper
         </Button>
       </div>
@@ -227,64 +278,87 @@ const QuestionBankPage = () => {
         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search papers..."
+          className="pl-10"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
         />
       </div>
 
-      {/* Grid */}
+      {/* Table Output */}
       {loading ? (
         <div className="flex justify-center py-20">
-          <div className="animate-spin h-10 w-10 rounded-full border-b-2 border-primary"></div>
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
         </div>
       ) : filteredPapers.length === 0 ? (
-        <div className="text-center py-10 text-muted-foreground">
-          No question papers found.
-        </div>
+        <p className="text-center py-10 text-muted-foreground">No papers found.</p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredPapers.map((item) => (
-            <div key={item.id} className="group rounded-xl border p-4 bg-card">
-              <div className="flex items-start gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-success/10">
-                  <File className="h-6 w-6 text-success" />
-                </div>
+        <>
+          <div className="rounded-lg border bg-card shadow overflow-hidden">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-muted/40">
+                  <th className="border p-3 text-center">Subject</th>
+                  <th className="border p-3 text-center">PDF Name</th>
+                  <th className="border p-3 text-center">Uploaded On</th>
+                  <th className="border p-3 text-center">Actions</th>
+                </tr>
+              </thead>
 
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{item.subjectName}</p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {item.fileName}
-                  </p>
-                </div>
-              </div>
+              <tbody>
+                {filteredPapers.map((item) => (
+                  <tr key={item.id} className="hover:bg-muted/20">
+                    <td className="border p-3 text-center">{item.subjectName}</td>
 
-              <div className="mt-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => window.open(item.pdfUrl, "_blank")}
-                >
-                  <Download className="h-4 w-4" />
-                  Download
-                </Button>
+                    <td className="border p-3 text-center">{item.fileName}</td>
 
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="text-destructive"
-                  onClick={() => confirmDelete(item)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+                    <td className="border p-3 text-center">
+                      {item.createdAt?.toDate
+                        ? item.createdAt.toDate().toLocaleDateString()
+                        : "—"}
+                    </td>
+
+                    <td className="border p-3 text-center">
+                      <div className="flex justify-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => window.open(item.pdfUrl, "_blank")}
+                        >
+                          <SquareArrowOutUpRight className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive"
+                          onClick={() => confirmDelete(item)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            rowsPerPage={rowsPerPage}
+            onPageChange={setCurrentPage}
+            onRowsPerPageChange={(rows) => {
+              setRowsPerPage(rows);
+              setCurrentPage(1);
+              setPageCursors([]);
+            }}
+          />
+        </>
       )}
 
-      {/* Add Modal */}
+      {/* Upload Modal */}
       <AddQuestionPaperModal
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
@@ -297,8 +371,8 @@ const QuestionBankPage = () => {
         open={deleteModalOpen}
         onOpenChange={setDeleteModalOpen}
         onConfirm={handleDelete}
-        title="Delete Confirmation"
-        description={`Are you sure you want to delete "${itemToDelete?.fileName}"? This cannot be undone.`}
+        title="Delete Question Paper"
+        description={`Are you sure you want to delete "${itemToDelete?.fileName}"?`}
       />
     </div>
   );

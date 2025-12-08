@@ -1,9 +1,77 @@
-import { Megaphone, Calendar, FileQuestion, FileText, BookOpen } from 'lucide-react';
+"use client";
+
+import { useEffect, useState } from 'react';
+import { Megaphone, Calendar, FileQuestion, FileText, BookOpen, MessageSquare } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { QuickActions } from '@/components/dashboard/QuickActions';
+import { collection, query, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function Dashboard() {
+  const [buzzCount, setBuzzCount] = useState(0);
+  const [eventsCount, setEventsCount] = useState(0);
+  const [questionPapersCount, setQuestionPapersCount] = useState(0);
+  const [examCircularsCount, setExamCircularsCount] = useState(0);
+  const [magazinesCount, setMagazinesCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [inquiryCount, setInquiryCount] = useState(0);
+
+  // Fetch Buzz count
+  useEffect(() => {
+    const q = query(collection(db, "buzz"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setBuzzCount(snapshot.docs.length);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch Inquiry count
+  useEffect(() => {
+    const q = query(collection(db, "inquiry"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setInquiryCount(snapshot.docs.length);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch Events count
+  useEffect(() => {
+    const q = query(collection(db, "events"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setEventsCount(snapshot.docs.length);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch Question Papers count
+  useEffect(() => {
+    const q = query(collection(db, "question-papers"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setQuestionPapersCount(snapshot.docs.length);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch Exam Circulars count
+  useEffect(() => {
+    const q = query(collection(db, "exam-circulars"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setExamCircularsCount(snapshot.docs.length);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch Magazines count
+  useEffect(() => {
+    const q = query(collection(db, "magazines"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setMagazinesCount(snapshot.docs.length);
+    });
+    return () => unsubscribe();
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -16,35 +84,39 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+         <StatCard
+          title="Total Inquiry"
+          value={loading ? 0 : inquiryCount}
+          icon={MessageSquare}
+          variant="primary"
+        />
         <StatCard
           title="Total Buzz"
-          value={24}
+          value={loading ? 0 : buzzCount}
           icon={Megaphone}
           variant="primary"
-          trend={{ value: 12, isPositive: true }}
         />
         <StatCard
           title="Active Events"
-          value={8}
+          value={loading ? 0 : eventsCount}
           icon={Calendar}
           variant="accent"
-          trend={{ value: 5, isPositive: true }}
         />
         <StatCard
           title="Question Papers"
-          value={156}
+          value={loading ? 0 : questionPapersCount}
           icon={FileQuestion}
           variant="success"
         />
         <StatCard
           title="Exam Circulars"
-          value={42}
+          value={loading ? 0 : examCircularsCount}
           icon={FileText}
           variant="danger"
         />
         <StatCard
           title="E-Magazines"
-          value={12}
+          value={loading ? 0 : magazinesCount}
           icon={BookOpen}
           variant="primary"
         />
