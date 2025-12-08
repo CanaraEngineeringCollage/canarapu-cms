@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Edit } from "lucide-react";
+import { BookOpen, Calendar, Edit } from "lucide-react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { CreateEventModal } from "@/components/events/CreateEventModal";
@@ -105,7 +105,7 @@ export default function EventsPage() {
   return (
     <div className="p-6 space-y-6">
  <h1 className="page-header font-serif flex items-center gap-3">
-            <BookOpen className="h-8 w-8 text-primary" />
+            <Calendar className="h-8 w-8 text-primary" />
             Events</h1>
 
       {SectionCard("Mat-Kabbadi", matKabbadi, "mat-kabbadi")}

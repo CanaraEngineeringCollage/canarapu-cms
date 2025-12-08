@@ -155,7 +155,7 @@ const BuzzPage = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-header font-serif flex items-center gap-3">
-            <BookOpen className="h-8 w-8 text-primary" />
+            <Megaphone className="h-8 w-8 text-primary" />
             
             Buzz</h1>
           <p className="text-muted-foreground">Manage announcements and buzz items.</p>
