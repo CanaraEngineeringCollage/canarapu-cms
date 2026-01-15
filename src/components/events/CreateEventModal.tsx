@@ -96,25 +96,40 @@ export const CreateEventModal = ({ open, onOpenChange, category }: CreateEventMo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit {category}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          <Input placeholder="Heading" value={heading} onChange={(e) => setHeading(e.target.value)} />
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Heading</label>
+            <Input placeholder="Event Heading" value={heading} onChange={(e) => setHeading(e.target.value)} />
+          </div>
 
-          <Textarea placeholder="Description" className="h-32" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Description</label>
+            <Textarea placeholder="Event Description" className="h-32" value={description} onChange={(e) => setDescription(e.target.value)} />
+          </div>
 
-          <Input placeholder="Google Form URL" value={googleFormUrl} onChange={(e) => setGoogleFormUrl(e.target.value)} />
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Google Form URL</label>
+            <Input placeholder="https://docs.google.com/..." value={googleFormUrl} onChange={(e) => setGoogleFormUrl(e.target.value)} />
+          </div>
 
-          <Input placeholder="Flipbook URL" value={flipbookUrl} onChange={(e) => setFlipbookUrl(e.target.value)} />
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Flipbook URL</label>
+            <Input placeholder="Flipbook Link" value={flipbookUrl} onChange={(e) => setFlipbookUrl(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Venue</label>
+            <Input placeholder="Event Venue Name" value={venue} onChange={(e) => setVenue(e.target.value)} />
+          </div>
 
-          <Input placeholder="Get In Touch (Contact Info)" value={getInTouch} onChange={(e) => setGetInTouch(e.target.value)} />
-
-          <Input placeholder="Google Map URL" value={googleMapUrl} onChange={(e) => setGoogleMapUrl(e.target.value)} />
-
-          <Input placeholder="Venue" value={venue} onChange={(e) => setVenue(e.target.value)} />
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Google Map URL</label>
+            <Input placeholder="https://maps.google.com/..." value={googleMapUrl} onChange={(e) => setGoogleMapUrl(e.target.value)} />
+          </div>
 
           <div className="space-y-2">
             <div className="flex justify-between items-center">
@@ -146,6 +161,10 @@ export const CreateEventModal = ({ open, onOpenChange, category }: CreateEventMo
                 </Button>
               </div>
             ))}
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Get In Touch</label>
+            <Input placeholder="Contact Info / Phone / Email" value={getInTouch} onChange={(e) => setGetInTouch(e.target.value)} />
           </div>
         </div>
 
