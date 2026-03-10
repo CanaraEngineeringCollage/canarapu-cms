@@ -6,6 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { AuthProvider } from "@/context/AuthContext";
+import { SessionProvider } from "@/components/providers/SessionProvider";
 
 export const metadata = {
   title: "Canara PU College Dashboard",
@@ -20,17 +21,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans">
-        <QueryProvider>
-          <TooltipProvider>
-            <AuthProvider>
-              <DashboardLayout>
-                {children}
-              </DashboardLayout>
-            </AuthProvider>
-            <Toaster />
-            <Sonner />
-          </TooltipProvider>
-        </QueryProvider>
+        <SessionProvider>
+          <QueryProvider>
+            <TooltipProvider>
+              <AuthProvider>
+                <DashboardLayout>
+                  {children}
+                </DashboardLayout>
+              </AuthProvider>
+              <Toaster />
+              <Sonner />
+            </TooltipProvider>
+          </QueryProvider>
+        </SessionProvider>
       </body>
     </html>
   );

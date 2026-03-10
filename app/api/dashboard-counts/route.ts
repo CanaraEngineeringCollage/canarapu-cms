@@ -1,29 +1,32 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { collection, getCountFromServer } from "firebase/firestore";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { requireAuth } from '@/lib/api-auth';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const collections = [
-      "buzz",
-      "inquiry",
-      "events",
-      "question-papers",
-      "exam-circulars",
-      "magazines",
-    ];
+    const { error } = await requireAuth(req);
+    if (error) return error;
 
-    const result: any = {};
+    const [buzz, inquiry, events, questionPapers, examCirculars, magazines] =
+      await prisma.$transaction([
+        prisma.buzz.count(),
+        prisma.inquiry.count(),
+        prisma.event.count(),
+        prisma.questionPaper.count(),
+        prisma.examCircular.count(),
+        prisma.magazine.count(),
+      ]);
 
-    // Fetch count for each collection
-    for (const col of collections) {
-      const snap = await getCountFromServer(collection(db, col));
-      result[col] = snap.data().count;
-    }
-
-    return NextResponse.json(result);
+    return NextResponse.json({
+      buzz,
+      inquiry,
+      events,
+      'question-papers': questionPapers,
+      'exam-circulars': examCirculars,
+      magazines,
+    });
   } catch (error) {
-    console.error("Dashboard count error:", error);
-    return NextResponse.json({ error: "Failed to load counts" }, { status: 500 });
+    console.error('Dashboard count error:', error);
+    return NextResponse.json({ error: 'Failed to load counts' }, { status: 500 });
   }
 }
