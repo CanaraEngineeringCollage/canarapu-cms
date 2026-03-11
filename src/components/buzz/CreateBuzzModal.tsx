@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -52,11 +52,37 @@ export const CreateBuzzModal = ({
   const [date, setDate] = useState<Date | undefined>(undefined);
   const emailEditorRef = useRef<any>(null);
   const [isEditorLoaded, setIsEditorLoaded] = useState(false);
+  
+  const [categories, setCategories] = useState(["sports", "cultural", "academic"]);
+  const [newCategory, setNewCategory] = useState("");
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await fetch("/api/buzz/categories");
+      if (res.ok) {
+        const data = await res.json();
+        setCategories((prev) => {
+          const uniqueItems = new Set([...prev, ...data.map((c: string) => c.toLowerCase())]);
+          return Array.from(uniqueItems);
+        });
+      }
+    } catch (error) {
+      console.error("Failed to load categories", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   useEffect(() => {
     if (editItem) {
       setName(editItem.name);
       setCategory(editItem.category);
+      if (editItem.category && !categories.includes(editItem.category.toLowerCase())) {
+        setCategories((prev) => [...prev, editItem.category.toLowerCase()]);
+      }
       if (editItem.date) setDate(new Date(editItem.date));
     } else if (open) {
       resetForm();
@@ -139,13 +165,67 @@ export const CreateBuzzModal = ({
           </div>
           <div className="space-y-2">
             <Label>Category</Label>
-            <Select value={category} onValueChange={setCategory}>
+            <Select 
+              value={category} 
+              onValueChange={setCategory}
+              open={isSelectOpen}
+              onOpenChange={setIsSelectOpen}
+            >
               <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="sports">Sports</SelectItem>
-                <SelectItem value="cultural">Cultural</SelectItem>
-                <SelectItem value="academic">Academic</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </SelectItem>
+                ))}
+                <div className="flex items-center gap-2 p-2 border-t mt-1">
+                  <Input
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (newCategory.trim() && !categories.includes(newCategory.trim().toLowerCase())) {
+                          const newCat = newCategory.trim().toLowerCase();
+                          setCategories([...categories, newCat]);
+                          setCategory(newCat);
+                          setNewCategory("");
+                          setIsSelectOpen(false);
+                        } else if (categories.includes(newCategory.trim().toLowerCase())) {
+                          setCategory(newCategory.trim().toLowerCase());
+                          setNewCategory("");
+                          setIsSelectOpen(false);
+                        }
+                      }
+                    }}
+                    placeholder="New category..."
+                    className="h-8"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="h-8 px-2"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (newCategory.trim() && !categories.includes(newCategory.trim().toLowerCase())) {
+                        const newCat = newCategory.trim().toLowerCase();
+                        setCategories([...categories, newCat]);
+                        setCategory(newCat);
+                        setNewCategory("");
+                        setIsSelectOpen(false);
+                      } else if (categories.includes(newCategory.trim().toLowerCase())) {
+                        setCategory(newCategory.trim().toLowerCase());
+                        setNewCategory("");
+                        setIsSelectOpen(false);
+                      }
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
               </SelectContent>
             </Select>
           </div>

@@ -1,4 +1,4 @@
-import { Bell, LogOut, User, Menu } from 'lucide-react';
+import { Bell, LogOut, User, Menu, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -8,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import Link from 'next/link';
 
 interface HeaderProps {
   adminEmail?: string;
@@ -52,10 +53,12 @@ export const Header = ({ adminEmail = 'admin@canara.edu', onLogout, onToggleSide
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {/* <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4" />
-              Profile Settings
-            </DropdownMenuItem> */}
+            <Link href="/settings">
+              <DropdownMenuItem className="cursor-pointer focus:bg-transparent focus:text-foreground hover:bg-transparent data-[highlighted]:bg-transparent">
+                <Settings className="mr-2 h-4 w-4" />
+                Profile Settings
+              </DropdownMenuItem>
+            </Link>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onLogout} className="text-destructive focus:text-destructive  bg-none hover:bg-none">
               <LogOut className="mr-2 h-4 w-4" />

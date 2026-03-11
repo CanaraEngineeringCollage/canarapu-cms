@@ -7,130 +7,130 @@ import { toast } from "sonner";
 import Pagination from "@/components/ui/Pagination";
 
 interface InquiryItem {
-  id: number;
-  fullName: string;
-  email: string;
-  phoneNumber: string;
-  comments: string;
-  createdAt?: string;
+ id: number;
+ fullName: string;
+ email: string;
+ phoneNumber: string;
+ comments: string;
+ createdAt?: string;
 }
 
 const InquiryPage = () => {
-  const [inquiries, setInquiries] = useState<InquiryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+ const [inquiries, setInquiries] = useState<InquiryItem[]>([]);
+ const [loading, setLoading] = useState(true);
+ const [searchTerm, setSearchTerm] = useState("");
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
+ const [currentPage, setCurrentPage] = useState(1);
+ const [rowsPerPage, setRowsPerPage] = useState(10);
+ const [totalPages, setTotalPages] = useState(1);
 
-  const fetchPage = useCallback(async (page: number, limit: number) => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/inquiry?page=${page}&limit=${limit}`);
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setInquiries(data.items ?? []);
-      setTotalPages(data.totalPages ?? 1);
-    } catch {
-      toast.error("Failed to load inquiries");
-    }
-    setLoading(false);
-  }, []);
+ const fetchPage = useCallback(async (page: number, limit: number) => {
+  setLoading(true);
+  try {
+   const res = await fetch(`/api/inquiry?page=${page}&limit=${limit}`);
+   if (!res.ok) throw new Error();
+   const data = await res.json();
+   setInquiries(data.items ?? []);
+   setTotalPages(data.totalPages ?? 1);
+  } catch {
+   toast.error("Failed to load inquiries");
+  }
+  setLoading(false);
+ }, []);
 
-  useEffect(() => {
-    fetchPage(currentPage, rowsPerPage);
-  }, [currentPage, rowsPerPage, fetchPage]);
+ useEffect(() => {
+  fetchPage(currentPage, rowsPerPage);
+ }, [currentPage, rowsPerPage, fetchPage]);
 
-  const filteredInquiries = inquiries.filter((item) =>
-    searchTerm.trim()
-      ? item.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.phoneNumber.toLowerCase().includes(searchTerm.toLowerCase())
-      : true
-  );
+ const filteredInquiries = inquiries.filter((item) =>
+  searchTerm.trim()
+   ? item.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.phoneNumber.toLowerCase().includes(searchTerm.toLowerCase())
+   : true
+ );
 
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-header font-serif flex items-center gap-3">
-            <MessageSquare className="h-8 w-8 text-primary" />
-            Inquiries
-          </h1>
-          <p className="text-muted-foreground">View and manage student inquiries.</p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, email, or phone..."
-            className="pl-8"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="flex items-center justify-center h-40">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
-      ) : filteredInquiries.length === 0 ? (
-        <div className="flex flex-col items-center justify-center border border-dashed p-8 rounded-lg">
-          <MessageSquare className="h-10 w-10 text-primary" />
-          <p className="mt-4 text-muted-foreground">No inquiries found</p>
-        </div>
-      ) : (
-        <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-muted/50">
-                  <th className="border p-3">Full Name</th>
-                  <th className="border p-3">Email</th>
-                  <th className="border p-3">Phone</th>
-                  <th className="border p-3">Comments</th>
-                  <th className="border p-3">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredInquiries.map((item) => (
-                  <tr key={item.id} className="hover:bg-muted/30 text-center transition-colors">
-                    <td className="border p-3 font-medium">{item.fullName}</td>
-                    <td className="border p-3">
-                      <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">
-                        {item.email}
-                      </a>
-                    </td>
-                    <td className="border p-3">
-                      <a href={`tel:${item.phoneNumber}`} className="text-blue-600 hover:underline">
-                        {item.phoneNumber}
-                      </a>
-                    </td>
-                    <td className="border p-3 text-sm text-muted-foreground max-w-md">{item.comments}</td>
-                    <td className="border p-3 text-sm text-muted-foreground">
-                      {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "N/A"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        rowsPerPage={rowsPerPage}
-        onPageChange={setCurrentPage}
-        onRowsPerPageChange={(rows) => { setRowsPerPage(rows); setCurrentPage(1); }}
-      />
+ return (
+  <div className="p-6 space-y-6">
+   <div className="flex items-center justify-between">
+    <div>
+     <h1 className="page-header flex items-center gap-3">
+      <MessageSquare className="h-8 w-8 text-primary" />
+      Inquiries
+     </h1>
+     <p className="text-muted-foreground">View and manage student inquiries.</p>
     </div>
-  );
+   </div>
+
+   <div className="flex items-center gap-4">
+    <div className="relative flex-1 max-w-sm">
+     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+     <Input
+      placeholder="Search by name, email, or phone..."
+      className="pl-8"
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+     />
+    </div>
+   </div>
+
+   {loading ? (
+    <div className="flex items-center justify-center h-40">
+     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+    </div>
+   ) : filteredInquiries.length === 0 ? (
+    <div className="flex flex-col items-center justify-center border border-dashed p-8 rounded-lg">
+     <MessageSquare className="h-10 w-10 text-primary" />
+     <p className="mt-4 text-muted-foreground">No inquiries found</p>
+    </div>
+   ) : (
+    <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
+     <div className="overflow-x-auto">
+      <table className="w-full border-collapse">
+       <thead>
+        <tr className="bg-muted/50">
+         <th className="border p-3">Full Name</th>
+         <th className="border p-3">Email</th>
+         <th className="border p-3">Phone</th>
+         <th className="border p-3">Comments</th>
+         <th className="border p-3">Date</th>
+        </tr>
+       </thead>
+       <tbody>
+        {filteredInquiries.map((item) => (
+         <tr key={item.id} className="hover:bg-muted/30 text-center transition-colors">
+          <td className="border p-3 font-medium">{item.fullName}</td>
+          <td className="border p-3">
+           <a href={`mailto:${item.email}`} className="text-blue-600 hover:underline">
+            {item.email}
+           </a>
+          </td>
+          <td className="border p-3">
+           <a href={`tel:${item.phoneNumber}`} className="text-blue-600 hover:underline">
+            {item.phoneNumber}
+           </a>
+          </td>
+          <td className="border p-3 text-sm text-muted-foreground max-w-md">{item.comments}</td>
+          <td className="border p-3 text-sm text-muted-foreground">
+           {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "N/A"}
+          </td>
+         </tr>
+        ))}
+       </tbody>
+      </table>
+     </div>
+    </div>
+   )}
+
+   <Pagination
+    currentPage={currentPage}
+    totalPages={totalPages}
+    rowsPerPage={rowsPerPage}
+    onPageChange={setCurrentPage}
+    onRowsPerPageChange={(rows) => { setRowsPerPage(rows); setCurrentPage(1); }}
+   />
+  </div>
+ );
 };
 
 export default InquiryPage;
