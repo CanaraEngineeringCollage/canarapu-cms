@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+}
+
+model Buzz {
+  id        Int      @id @default(autoincrement())
+  name      String
+  category  String
+  date      String
+  content   String?  @db.LongText
+  createdAt DateTime @default(now())
+}
+
+model Inquiry {
+  id          Int      @id @default(autoincrement())
+  fullName    String
+  email       String
+  phoneNumber String
+  comments    String?  @db.Text
+  createdAt   DateTime @default(now())
+}
+
+model Event {
+  id            Int      @id @default(autoincrement())
+  category      String   @unique
+  heading       String
+  description   String?  @db.Text
+  googleFormUrl String?
+  flipbookUrl   String?
+  timing        Json?
+  getInTouch    String?
+  googleMapUrl  String?
+  venue         String?
+  updatedAt     DateTime @updatedAt
+}
+
+model QuestionPaper {
+  id        Int      @id @default(autoincrement())
+  name      String
+  subject   String
+  year      String
+  fileUrl   String
+  createdAt DateTime @default(now())
+}
+
+model ExamCircular {
+  id        Int      @id @default(autoincrement())
+  title     String
+  fileUrl   String
+  createdAt DateTime @default(now())
+}
+
+model Magazine {
+  id        Int      @id @default(autoincrement())
+  title     String
+  fileUrl   String
+  coverUrl  String?
+  year      String?
+  createdAt DateTime @default(now())
+}
