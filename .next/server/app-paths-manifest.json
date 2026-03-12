@@ -2,7 +2,6 @@
   "/_global-error/page": "app/_global-error/page.js",
   "/_not-found/page": "app/_not-found/page.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/api/auth/seed/route": "app/api/auth/seed/route.js",
   "/api/buzz/[id]/route": "app/api/buzz/[id]/route.js",
   "/api/buzz/categories/route": "app/api/buzz/categories/route.js",
   "/api/buzz/route": "app/api/buzz/route.js",
@@ -26,5 +25,6 @@
   "/login/page": "app/login/page.js",
   "/page": "app/page.js",
   "/question-bank/page": "app/question-bank/page.js",
+  "/seed/route": "app/seed/route.js",
   "/settings/page": "app/settings/page.js"
 }

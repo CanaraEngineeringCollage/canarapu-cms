@@ -137,15 +137,6 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
-// Validate ../../app/api/auth/seed/route.ts
-{
-  type __IsExpected<Specific extends RouteHandlerConfig<"/api/auth/seed">> = Specific
-  const handler = {} as typeof import("../../app/api/auth/seed/route.js")
-  type __Check = __IsExpected<typeof handler>
-  // @ts-ignore
-  type __Unused = __Check
-}
-
 // Validate ../../app/api/buzz/[id]/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/buzz/[id]">> = Specific
@@ -267,6 +258,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/upload">> = Specific
   const handler = {} as typeof import("../../app/api/upload/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/seed/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/seed">> = Specific
+  const handler = {} as typeof import("../../app/seed/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check

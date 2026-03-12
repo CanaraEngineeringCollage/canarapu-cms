@@ -104,12 +104,6 @@
       "namedRegex": "^/_not\\-found(?:/)?$"
     },
     {
-      "page": "/api/auth/seed",
-      "regex": "^/api/auth/seed(?:/)?$",
-      "routeKeys": {},
-      "namedRegex": "^/api/auth/seed(?:/)?$"
-    },
-    {
       "page": "/api/buzz",
       "regex": "^/api/buzz(?:/)?$",
       "routeKeys": {},
@@ -216,6 +210,12 @@
       "regex": "^/question\\-bank(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/question\\-bank(?:/)?$"
+    },
+    {
+      "page": "/seed",
+      "regex": "^/seed(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/seed(?:/)?$"
     },
     {
       "page": "/settings",
