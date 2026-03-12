@@ -1,0 +1,248 @@
+{
+  "version": 3,
+  "pages404": true,
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/:path*",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Credentials",
+          "value": "true"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://preuniversity.vercel.app"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
+        }
+      ],
+      "regex": "^/api(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?$"
+    }
+  ],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/api/auth/[...nextauth]",
+      "regex": "^/api/auth/(.+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPnextauth": "nxtPnextauth"
+      },
+      "namedRegex": "^/api/auth/(?<nxtPnextauth>.+?)(?:/)?$"
+    },
+    {
+      "page": "/api/buzz/[id]",
+      "regex": "^/api/buzz/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/buzz/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/exam-circulars/[id]",
+      "regex": "^/api/exam\\-circulars/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/exam\\-circulars/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/magazines/[id]",
+      "regex": "^/api/magazines/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/magazines/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/question-papers/[id]",
+      "regex": "^/api/question\\-papers/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/question\\-papers/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/uploads/[filename]",
+      "regex": "^/uploads/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPfilename": "nxtPfilename"
+      },
+      "namedRegex": "^/uploads/(?<nxtPfilename>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/api/buzz",
+      "regex": "^/api/buzz(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/buzz(?:/)?$"
+    },
+    {
+      "page": "/api/buzz/categories",
+      "regex": "^/api/buzz/categories(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/buzz/categories(?:/)?$"
+    },
+    {
+      "page": "/api/dashboard-counts",
+      "regex": "^/api/dashboard\\-counts(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/dashboard\\-counts(?:/)?$"
+    },
+    {
+      "page": "/api/events",
+      "regex": "^/api/events(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/events(?:/)?$"
+    },
+    {
+      "page": "/api/exam-circulars",
+      "regex": "^/api/exam\\-circulars(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/exam\\-circulars(?:/)?$"
+    },
+    {
+      "page": "/api/inquiry",
+      "regex": "^/api/inquiry(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/inquiry(?:/)?$"
+    },
+    {
+      "page": "/api/magazines",
+      "regex": "^/api/magazines(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/magazines(?:/)?$"
+    },
+    {
+      "page": "/api/profile",
+      "regex": "^/api/profile(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/profile(?:/)?$"
+    },
+    {
+      "page": "/api/question-papers",
+      "regex": "^/api/question\\-papers(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/question\\-papers(?:/)?$"
+    },
+    {
+      "page": "/api/upload",
+      "regex": "^/api/upload(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/upload(?:/)?$"
+    },
+    {
+      "page": "/buzz",
+      "regex": "^/buzz(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/buzz(?:/)?$"
+    },
+    {
+      "page": "/e-magazines",
+      "regex": "^/e\\-magazines(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/e\\-magazines(?:/)?$"
+    },
+    {
+      "page": "/events",
+      "regex": "^/events(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/events(?:/)?$"
+    },
+    {
+      "page": "/exam-circulars",
+      "regex": "^/exam\\-circulars(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/exam\\-circulars(?:/)?$"
+    },
+    {
+      "page": "/icon.png",
+      "regex": "^/icon\\.png(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/icon\\.png(?:/)?$"
+    },
+    {
+      "page": "/inquiry",
+      "regex": "^/inquiry(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/inquiry(?:/)?$"
+    },
+    {
+      "page": "/login",
+      "regex": "^/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/question-bank",
+      "regex": "^/question\\-bank(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/question\\-bank(?:/)?$"
+    },
+    {
+      "page": "/settings",
+      "regex": "^/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/settings(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSuffix": ".prefetch.rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}
