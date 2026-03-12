@@ -1,9 +1,0 @@
-{
-  "[project]/node_modules/react-email-editor/dist/index.js [app-client] (ecmascript, next/dynamic entry)": {
-    "id": "[project]/node_modules/react-email-editor/dist/index.js [app-client] (ecmascript, next/dynamic entry)",
-    "files": [
-      "static/chunks/node_modules_react-email-editor_dist_64119be5._.js",
-      "static/chunks/node_modules_react-email-editor_dist_index_c19d4d2e.js"
-    ]
-  }
-}
