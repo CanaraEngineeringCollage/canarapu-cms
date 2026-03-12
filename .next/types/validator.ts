@@ -263,10 +263,10 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
-// Validate ../../app/seed/route.ts
+// Validate ../../app/uploads/[filename]/route.ts
 {
-  type __IsExpected<Specific extends RouteHandlerConfig<"/seed">> = Specific
-  const handler = {} as typeof import("../../app/seed/route.js")
+  type __IsExpected<Specific extends RouteHandlerConfig<"/uploads/[filename]">> = Specific
+  const handler = {} as typeof import("../../app/uploads/[filename]/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check

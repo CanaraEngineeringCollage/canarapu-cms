@@ -25,6 +25,6 @@
   "/login/page": "app/login/page.js",
   "/page": "app/page.js",
   "/question-bank/page": "app/question-bank/page.js",
-  "/seed/route": "app/seed/route.js",
-  "/settings/page": "app/settings/page.js"
+  "/settings/page": "app/settings/page.js",
+  "/uploads/[filename]/route": "app/uploads/[filename]/route.js"
 }
