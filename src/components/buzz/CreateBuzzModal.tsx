@@ -261,7 +261,7 @@ export const CreateBuzzModal = ({
           <EmailEditor
             key={editorKey}
             ref={emailEditorRef}
-            minHeight="60vh"
+            minHeight="100%"
             projectId={1234}
             options={{ displayMode: "email" }}
             onReady={() => {
