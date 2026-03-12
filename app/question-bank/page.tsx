@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Search, FileQuestion, Trash2, Loader2, SquareArrowOutUpRight } from "lucide-react";
+import { Plus, Search, FileQuestion, Trash2, Loader2, SquareArrowOutUpRight, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -69,6 +69,70 @@ const AddQuestionPaperModal = ({ open, onClose, onSubmit, loading }: AddQuestion
 };
 
 /* --------------------------------------------------
+  Edit Question Paper Modal
+-------------------------------------------------- */
+interface EditQuestionPaperModalProps {
+ open: boolean;
+ onClose: () => void;
+ item: QuestionPaper | null;
+ onSubmit: (id: number, name: string, subject: string, year: string, file?: File | null) => void;
+ loading: boolean;
+}
+
+const EditQuestionPaperModal = ({ open, onClose, item, onSubmit, loading }: EditQuestionPaperModalProps) => {
+ const [name, setName] = useState("");
+ const [subject, setSubject] = useState("");
+ const [year, setYear] = useState("");
+ const [file, setFile] = useState<File | null>(null);
+
+ useEffect(() => {
+  if (!open || !item) return;
+  setName(item.name ?? "");
+  setSubject(item.subject ?? "");
+  setYear(item.year ?? "");
+  setFile(null);
+ }, [open, item]);
+
+ const handleSave = () => {
+  if (!item) return;
+  if (!name.trim()) return toast.error("Name is required.");
+  if (!subject.trim()) return toast.error("Subject name is required.");
+  if (!year) return toast.error("Please select a category.");
+  onSubmit(item.id, name.trim(), subject.trim(), year, file);
+ };
+
+ if (!open || !item) return null;
+
+ return (
+  <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+   <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+    <h2 className="text-xl font-semibold mb-4">Edit Question Paper</h2>
+    <label className="block mb-2 text-sm font-medium">Paper Name</label>
+    <Input placeholder="Enter paper name" value={name} onChange={(e) => setName(e.target.value)} />
+    <label className="block mt-4 mb-2 text-sm font-medium">Subject Name</label>
+    <Input placeholder="Enter subject name" value={subject} onChange={(e) => setSubject(e.target.value)} />
+    <label className="block mt-4 mb-2 text-sm font-medium">Category</label>
+    <Select value={year} onValueChange={setYear}>
+     <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+     <SelectContent>
+      <SelectItem value="firstYear">First Year</SelectItem>
+      <SelectItem value="secondYear">Second Year</SelectItem>
+     </SelectContent>
+    </Select>
+    <label className="block mt-4 mb-2 text-sm font-medium">Replace PDF File (optional)</label>
+    <Input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+    <div className="flex justify-end gap-3 mt-6">
+     <Button variant="outline" onClick={onClose}>Cancel</Button>
+     <Button onClick={handleSave} disabled={loading}>
+      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+     </Button>
+    </div>
+   </div>
+  </div>
+ );
+};
+
+/* --------------------------------------------------
   Main Page
 -------------------------------------------------- */
 interface QuestionPaper {
@@ -90,6 +154,8 @@ const QuestionBankPage = () => {
  const [currentPage, setCurrentPage] = useState(1);
  const [totalPages, setTotalPages] = useState(1);
  const [addModalOpen, setAddModalOpen] = useState(false);
+ const [editModalOpen, setEditModalOpen] = useState(false);
+ const [editItem, setEditItem] = useState<QuestionPaper | null>(null);
  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
  const [itemToDelete, setItemToDelete] = useState<QuestionPaper | null>(null);
 
@@ -128,6 +194,33 @@ const QuestionBankPage = () => {
    toast.error("Upload failed");
   }
   setUploading(false);
+ };
+
+ const [savingEdit, setSavingEdit] = useState(false);
+ const openEdit = (item: QuestionPaper) => {
+  setEditItem(item);
+  setEditModalOpen(true);
+ };
+
+ const saveEdit = async (id: number, name: string, subject: string, year: string, file?: File | null) => {
+  setSavingEdit(true);
+  try {
+   const formData = new FormData();
+   formData.append("name", name);
+   formData.append("subject", subject);
+   formData.append("year", year);
+   if (file) formData.append("file", file);
+
+   const res = await fetch(`/api/question-papers/${id}`, { method: "PUT", body: formData });
+   if (!res.ok) throw new Error();
+   toast.success("Updated successfully");
+   setEditModalOpen(false);
+   setEditItem(null);
+   fetchPage(currentPage, rowsPerPage);
+  } catch {
+   toast.error("Update failed");
+  }
+  setSavingEdit(false);
  };
 
  const confirmDelete = (item: QuestionPaper) => {
@@ -203,7 +296,6 @@ const QuestionBankPage = () => {
        <table className="w-full border-collapse">
         <thead>
          <tr className="bg-muted/40">
-          <th className="border p-3 text-center">Name</th>
           <th className="border p-3 text-center">Subject</th>
           <th className="border p-3 text-center">Category</th>
           <th className="border p-3 text-center">Uploaded On</th>
@@ -213,7 +305,6 @@ const QuestionBankPage = () => {
         <tbody>
          {filteredPapers.map((item) => (
           <tr key={item.id} className="hover:bg-muted/20">
-           <td className="border p-3 text-center">{item.name}</td>
            <td className="border p-3 text-center">{item.subject}</td>
            <td className="border p-3 text-center">
             {item.year === "firstYear" ? "First Year" : item.year === "secondYear" ? "Second Year" : item.year || "—"}
@@ -226,6 +317,9 @@ const QuestionBankPage = () => {
              <Button variant="ghost" size="icon" onClick={() => window.open(item.fileUrl, "_blank")}>
               <SquareArrowOutUpRight className="h-4 w-4" />
              </Button>
+            <Button variant="ghost" size="icon" onClick={() => openEdit(item)}>
+             <Pencil className="h-4 w-4" />
+            </Button>
              <Button variant="ghost" size="icon" className="text-destructive" onClick={() => confirmDelete(item)}>
               <Trash2 className="h-4 w-4" />
              </Button>
@@ -259,6 +353,13 @@ const QuestionBankPage = () => {
     onClose={() => setAddModalOpen(false)}
     onSubmit={uploadQuestionPaper}
     loading={uploading}
+   />
+   <EditQuestionPaperModal
+    open={editModalOpen}
+    onClose={() => { setEditModalOpen(false); setEditItem(null); }}
+    item={editItem}
+    onSubmit={saveEdit}
+    loading={savingEdit}
    />
   </div>
  );

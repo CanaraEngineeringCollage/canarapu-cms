@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Search, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import Pagination from "@/components/ui/Pagination";
 
@@ -50,6 +51,38 @@ const InquiryPage = () => {
    : true
  );
 
+ const exportCsv = () => {
+  if (filteredInquiries.length === 0) {
+   toast.error("No inquiries to export");
+   return;
+  }
+
+  const escape = (value: unknown) => {
+   const s = String(value ?? "");
+   const needsQuotes = /[",\n]/.test(s);
+   const escaped = s.replace(/"/g, '""');
+   return needsQuotes ? `"${escaped}"` : escaped;
+  };
+
+  const header = ["Full Name", "Email", "Phone", "Comments", "Date"];
+  const rows = filteredInquiries.map((i) => ([
+   i.fullName,
+   i.email,
+   i.phoneNumber,
+   i.comments,
+   i.createdAt ? new Date(i.createdAt).toLocaleDateString() : "",
+  ]));
+
+  const csv = [header, ...rows].map((r) => r.map(escape).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `inquiries-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+ };
+
  return (
   <div className="p-6 space-y-6">
    <div className="flex items-center justify-between">
@@ -62,7 +95,7 @@ const InquiryPage = () => {
     </div>
    </div>
 
-   <div className="flex items-center gap-4">
+   <div className="flex items-center gap-4 flex-wrap">
     <div className="relative flex-1 max-w-sm">
      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
      <Input
@@ -72,6 +105,7 @@ const InquiryPage = () => {
       onChange={(e) => setSearchTerm(e.target.value)}
      />
     </div>
+    <Button variant="outline" onClick={exportCsv}>Export as CSV</Button>
    </div>
 
    {loading ? (

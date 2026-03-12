@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
- Plus, Search, FileText, Loader2, Trash2, SquareArrowOutUpRight,
+ Plus, Search, FileText, Loader2, Trash2, SquareArrowOutUpRight, Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,11 +16,19 @@ interface AddCircularModalProps {
  onClose: () => void;
  onSubmit: (title: string, file: File) => void;
  loading: boolean;
+ initialTitle?: string;
+ isEdit?: boolean;
 }
 
-const AddCircularModal = ({ open, onClose, onSubmit, loading }: AddCircularModalProps) => {
+const AddCircularModal = ({ open, onClose, onSubmit, loading, initialTitle = "", isEdit = false }: AddCircularModalProps) => {
  const [title, setTitle] = useState("");
  const [file, setFile] = useState<File | null>(null);
+
+ useEffect(() => {
+  if (!open) return;
+  setTitle(initialTitle);
+  setFile(null);
+ }, [open, initialTitle]);
 
  const submit = () => {
   if (!title.trim()) return toast.error("Title is required");
@@ -33,14 +41,14 @@ const AddCircularModal = ({ open, onClose, onSubmit, loading }: AddCircularModal
  return (
   <div className="fixed inset-0 bg-black/30 h-full backdrop-blur-sm flex items-center justify-center z-50">
    <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
-    <h2 className="text-xl font-semibold mb-4">Add Exam Circular</h2>
+    <h2 className="text-xl font-semibold mb-4">{isEdit ? "Edit Exam Circular" : "Add Exam Circular"}</h2>
     <Input placeholder="Enter circular title" value={title} onChange={(e) => setTitle(e.target.value)} />
     <label className="block mt-4 mb-2 text-sm font-medium">Select PDF File</label>
     <Input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
     <div className="flex justify-end gap-3 mt-6">
      <Button variant="outline" onClick={onClose}>Cancel</Button>
      <Button disabled={loading} onClick={submit}>
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Upload"}
+      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isEdit ? "Save" : "Upload"}
      </Button>
     </div>
    </div>
@@ -65,6 +73,9 @@ const ExamCircularsPage = () => {
  const [currentPage, setCurrentPage] = useState(1);
  const [totalPages, setTotalPages] = useState(1);
  const [addModalOpen, setAddModalOpen] = useState(false);
+ const [editModalOpen, setEditModalOpen] = useState(false);
+ const [editItem, setEditItem] = useState<Circular | null>(null);
+ const [savingEdit, setSavingEdit] = useState(false);
  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
  const [itemToDelete, setItemToDelete] = useState<Circular | null>(null);
 
@@ -101,6 +112,31 @@ const ExamCircularsPage = () => {
    toast.error("Failed to upload");
   }
   setUploading(false);
+ };
+
+ const openEdit = (item: Circular) => {
+  setEditItem(item);
+  setEditModalOpen(true);
+ };
+
+ const saveEdit = async (title: string, file: File) => {
+  if (!editItem) return;
+  setSavingEdit(true);
+  try {
+   const formData = new FormData();
+   formData.append("title", title);
+   if (file) formData.append("file", file);
+
+   const res = await fetch(`/api/exam-circulars/${editItem.id}`, { method: "PUT", body: formData });
+   if (!res.ok) throw new Error();
+   toast.success("Circular updated");
+   setEditModalOpen(false);
+   setEditItem(null);
+   fetchPage(currentPage, rowsPerPage);
+  } catch {
+   toast.error("Failed to update");
+  }
+  setSavingEdit(false);
  };
 
  const confirmDelete = (item: Circular) => {
@@ -176,6 +212,9 @@ const ExamCircularsPage = () => {
              <Button variant="ghost" size="icon" onClick={() => window.open(item.fileUrl, "_blank")}>
               <SquareArrowOutUpRight className="h-4 w-4" />
              </Button>
+            <Button variant="ghost" size="icon" onClick={() => openEdit(item)}>
+             <Pencil className="h-4 w-4" />
+            </Button>
              <Button variant="ghost" size="icon" className="text-destructive" onClick={() => confirmDelete(item)}>
               <Trash2 className="h-4 w-4" />
              </Button>
@@ -209,6 +248,14 @@ const ExamCircularsPage = () => {
     onClose={() => setAddModalOpen(false)}
     onSubmit={uploadCircular}
     loading={uploading}
+   />
+   <AddCircularModal
+    open={editModalOpen}
+    onClose={() => { setEditModalOpen(false); setEditItem(null); }}
+    onSubmit={saveEdit}
+    loading={savingEdit}
+    initialTitle={editItem?.title ?? ""}
+    isEdit
    />
   </div>
  );

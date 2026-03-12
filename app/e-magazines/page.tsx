@@ -2,14 +2,13 @@
 
 import { useEffect, useState, useCallback } from "react";
 import {
- Plus, Search, BookOpen, Edit, Trash2, ExternalLink,
+ Plus, Search, BookOpen, Edit, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MagazineModal } from "@/components/magazines/MagazineModal";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 
 interface Magazine {
  id: number;
@@ -26,8 +25,6 @@ const EMagazinesPage = () => {
  const [loading, setLoading] = useState(true);
  const [isDialogOpen, setIsDialogOpen] = useState(false);
  const [editItem, setEditItem] = useState<{ id: number; url: string } | null>(null);
- const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
- const [isDeleting, setIsDeleting] = useState(false);
 
  const fetchMagazine = useCallback(async () => {
   setLoading(true);
@@ -48,27 +45,6 @@ const EMagazinesPage = () => {
  const handleCreateOrEdit = () => {
   setEditItem(magazine ? { id: magazine.id, url: magazine.fileUrl } : null);
   setIsDialogOpen(true);
- };
-
- const handleDelete = () => {
-  if (!magazine?.id) return;
-  setIsDeleteModalOpen(true);
- };
-
- const confirmDelete = async () => {
-  if (!magazine?.id) return;
-  setIsDeleting(true);
-  try {
-   const res = await fetch(`/api/magazines/${magazine.id}`, { method: "DELETE" });
-   if (!res.ok) throw new Error();
-   toast.success("Magazine deleted successfully");
-   setMagazine(null);
-   setIsDeleteModalOpen(false);
-  } catch {
-   toast.error("Failed to delete magazine");
-  } finally {
-   setIsDeleting(false);
-  }
  };
 
  return (
@@ -93,15 +69,6 @@ const EMagazinesPage = () => {
      editItem={editItem}
      onSuccess={fetchMagazine}
     />
-
-    <DeleteConfirmationModal
-     open={isDeleteModalOpen}
-     onOpenChange={setIsDeleteModalOpen}
-     onConfirm={confirmDelete}
-     loading={isDeleting}
-     title="Delete Magazine"
-     description="Are you sure you want to delete this magazine? This action cannot be undone."
-    />
    </div>
 
    {magazine ? (
@@ -125,9 +92,6 @@ const EMagazinesPage = () => {
        </a>
        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleCreateOrEdit}>
         <Edit className="h-4 w-4" />
-       </Button>
-       <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive" onClick={handleDelete}>
-        <Trash2 className="h-4 w-4" />
        </Button>
       </div>
      </div>
