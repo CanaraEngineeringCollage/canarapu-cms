@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -52,6 +52,7 @@ export const CreateBuzzModal = ({
   const [date, setDate] = useState<Date | undefined>(undefined);
   const emailEditorRef = useRef<any>(null);
   const [isEditorLoaded, setIsEditorLoaded] = useState(false);
+  const editorKey = useMemo(() => (editItem ? `edit-${editItem.id}` : "create"), [editItem]);
   
   const [categories, setCategories] = useState(["sports", "cultural", "academic"]);
   const [newCategory, setNewCategory] = useState("");
@@ -77,6 +78,8 @@ export const CreateBuzzModal = ({
   }, [fetchCategories]);
 
   useEffect(() => {
+    // Force a clean editor lifecycle when switching between create/edit items
+    setIsEditorLoaded(false);
     if (editItem) {
       setName(editItem.name);
       setCategory(editItem.category);
@@ -87,7 +90,7 @@ export const CreateBuzzModal = ({
     } else if (open) {
       resetForm();
     }
-  }, [editItem, open]);
+  }, [editItem, open, editorKey]);
 
   const resetForm = () => {
     setName("");
@@ -121,6 +124,7 @@ export const CreateBuzzModal = ({
                 name, category,
                 date: date.toISOString(),
                 content: safeHtml,
+                design: safeDesign,
               }),
             });
             if (!res.ok) throw new Error();
@@ -133,6 +137,7 @@ export const CreateBuzzModal = ({
                 name, category,
                 date: date.toISOString(),
                 content: safeHtml,
+                design: safeDesign,
               }),
             });
             if (!res.ok) throw new Error();
@@ -150,6 +155,18 @@ export const CreateBuzzModal = ({
       }
     );
   };
+
+  const getParsedDesign = useCallback(() => {
+    if (!editItem?.design) return null;
+    if (typeof editItem.design === "string") {
+      try {
+        return JSON.parse(editItem.design);
+      } catch {
+        return null;
+      }
+    }
+    return editItem.design;
+  }, [editItem]);
 
   return (
     <Dialog open={open} onOpenChange={(v) => setOpen(v)}>
@@ -242,14 +259,21 @@ export const CreateBuzzModal = ({
 
         <div className="flex-1 min-h-0 border rounded-md bg-muted/10 overflow-hidden">
           <EmailEditor
+            key={editorKey}
             ref={emailEditorRef}
             minHeight="60vh"
             projectId={1234}
             options={{ displayMode: "email" }}
             onReady={() => {
               setIsEditorLoaded(true);
-              if (editItem?.design) {
-                emailEditorRef.current.editor.loadDesign(editItem.design);
+              const design = getParsedDesign();
+              if (design && emailEditorRef.current?.editor) {
+                emailEditorRef.current.editor.loadDesign(design);
+              } else if (editItem?.content) {
+                toast.message(
+                  "This buzz was created without editor design data. It can’t be loaded into the builder.",
+                  { description: "Saving will overwrite it with a new design." }
+                );
               }
             }}
           />

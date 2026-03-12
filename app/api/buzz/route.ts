@@ -47,19 +47,27 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { name, category, date, content } = body;
+    const { name, category, date, content, design } = body;
 
     if (!name || !category || !date) {
       return NextResponse.json({ error: 'name, category and date are required' }, { status: 400 });
     }
 
     const buzz = await prisma.buzz.create({
-      data: { name, category, date, content },
+      data: { name, category, date, content, design },
     });
 
     return NextResponse.json(buzz, { status: 201 });
   } catch (error) {
     console.error('Buzz POST error:', error);
-    return NextResponse.json({ error: 'Failed to create buzz' }, { status: 500 });
+    const message =
+      error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json(
+      {
+        error: 'Failed to create buzz',
+        ...(process.env.NODE_ENV === 'development' ? { details: message } : {}),
+      },
+      { status: 500 }
+    );
   }
 }

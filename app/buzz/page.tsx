@@ -17,6 +17,7 @@ interface BuzzItem {
  category: string;
  date: string;
  content?: string;
+ design?: any;
  createdAt?: string;
 }
 
@@ -109,9 +110,16 @@ const BuzzPage = () => {
   }
  };
 
- const handleEdit = (item: BuzzItem) => {
-  setEditingItem(item);
-  setIsCreateOpen(true);
+ const handleEdit = async (item: BuzzItem) => {
+  try {
+   const res = await fetch(`/api/buzz/${item.id}`);
+   if (!res.ok) throw new Error();
+   const fullItem = await res.json();
+   setEditingItem(fullItem);
+   setIsCreateOpen(true);
+  } catch {
+   toast.error("Failed to load buzz for editing");
+  }
  };
 
  const handleCreate = () => {

@@ -21,6 +21,7 @@ model Buzz {
   category  String
   date      String
   content   String?  @db.LongText
+  design    Json?
   createdAt DateTime @default(now())
 }
 
