@@ -23,7 +23,7 @@
         },
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "http://localhost:3001"
+          "value": "https://preuniversity.vercel.app"
         },
         {
           "key": "Access-Control-Allow-Methods",
