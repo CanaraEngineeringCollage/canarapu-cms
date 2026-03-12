@@ -205,7 +205,7 @@ const ExamCircularsPage = () => {
           <tr key={item.id} className="hover:bg-muted/20">
            <td className="border p-3 text-center">{item.title}</td>
            <td className="border p-3 text-center">
-            {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "—"}
+            {item.createdAt ? new Date(item.createdAt).toLocaleDateString("en-GB") : "—"}
            </td>
            <td className="border p-3 text-center">
             <div className="flex justify-center gap-2">

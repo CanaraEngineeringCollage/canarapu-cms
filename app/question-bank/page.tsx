@@ -314,7 +314,7 @@ const QuestionBankPage = () => {
                       <td className="border p-3 text-center">
                         {item.year === "firstYear" ? "First Year" : item.year === "secondYear" ? "Second Year" : item.year || "—"}
                       </td>
-                      <td className="border p-3 text-center">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "—"}</td>
+                      <td className="border p-3 text-center">{item.createdAt ? new Date(item.createdAt).toLocaleDateString("en-GB") : "—"}</td>
                       <td className="border p-3 text-center">
                         <div className="flex justify-center gap-2">
                           <Button variant="ghost" size="icon" onClick={() => window.open(item.fileUrl, "_blank")}>

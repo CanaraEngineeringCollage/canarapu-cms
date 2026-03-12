@@ -146,7 +146,7 @@ const InquiryPage = () => {
           </td>
           <td className="border p-3 text-sm text-muted-foreground max-w-md">{item.comments}</td>
           <td className="border p-3 text-sm text-muted-foreground">
-           {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "N/A"}
+             {item.createdAt ? new Date(item.createdAt).toLocaleDateString("en-GB") : "N/A"}
           </td>
          </tr>
         ))}
