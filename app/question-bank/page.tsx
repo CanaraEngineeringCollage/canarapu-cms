@@ -162,10 +162,10 @@ const QuestionBankPage = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<QuestionPaper | null>(null);
 
-  const fetchPage = useCallback(async (page: number, limit: number) => {
+  const fetchPage = useCallback(async (page: number, limit: number, category: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/question-papers?page=${page}&limit=${limit}`);
+      const res = await fetch(`/api/question-papers?page=${page}&limit=${limit}&category=${category}`);
       const data = await res.json();
       setPapers(data.items ?? []);
       setTotalPages(data.totalPages ?? 1);
@@ -176,8 +176,8 @@ const QuestionBankPage = () => {
   }, []);
 
   useEffect(() => {
-    fetchPage(currentPage, rowsPerPage);
-  }, [currentPage, rowsPerPage, fetchPage]);
+    fetchPage(currentPage, rowsPerPage, categoryFilter);
+  }, [currentPage, rowsPerPage, fetchPage, categoryFilter]);
 
   const uploadQuestionPaper = async (subject: string, year: string, file: File) => {
     setUploading(true);
@@ -191,7 +191,7 @@ const QuestionBankPage = () => {
       if (!res.ok) throw new Error();
       toast.success("Uploaded successfully");
       setAddModalOpen(false);
-      fetchPage(currentPage, rowsPerPage);
+      fetchPage(currentPage, rowsPerPage, categoryFilter);
     } catch {
       toast.error("Upload failed");
     }
@@ -217,7 +217,7 @@ const QuestionBankPage = () => {
       toast.success("Updated successfully");
       setEditModalOpen(false);
       setEditItem(null);
-      fetchPage(currentPage, rowsPerPage);
+      fetchPage(currentPage, rowsPerPage, categoryFilter);
     } catch {
       toast.error("Update failed");
     }
@@ -235,7 +235,7 @@ const QuestionBankPage = () => {
       const res = await fetch(`/api/question-papers/${itemToDelete.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       toast.success("Deleted successfully");
-      fetchPage(currentPage, rowsPerPage);
+      fetchPage(currentPage, rowsPerPage, categoryFilter);
     } catch {
       toast.error("Failed to delete");
     }
@@ -244,9 +244,7 @@ const QuestionBankPage = () => {
   };
 
   const filteredPapers = papers.filter((p) => {
-    const matchesSearch = p.subject.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || p.year === categoryFilter;
-    return matchesSearch && matchesCategory;
+    return p.subject.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   return (
@@ -272,7 +270,13 @@ const QuestionBankPage = () => {
             <Input placeholder="Search papers..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
           <div className="w-[200px]">
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <Select
+              value={categoryFilter}
+              onValueChange={(val) => {
+                setCategoryFilter(val);
+                setCurrentPage(1);
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
