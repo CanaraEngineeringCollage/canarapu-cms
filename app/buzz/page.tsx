@@ -228,7 +228,7 @@ const BuzzPage = () => {
            </td>
            <td className="border p-2 align-top capitalize">{item.category}</td>
            <td className="border p-2 align-top">
-            {item.date ? new Date(item.date).toLocaleDateString() : "N/A"}
+            {item.date ? new Date(item.date).toLocaleDateString("en-GB") : "N/A"}
            </td>
           </tr>
          </tbody>
