@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { parse } from "node-html-parser";
 import { Plus, Search, Filter, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,14 +20,22 @@ interface BuzzItem {
  createdAt?: string;
 }
 
+// SAFEGUARD: Replaced node-html-parser with native DOMParser
 const extractContent = (html?: string) => {
  if (!html) return { title: "No Title", excerpt: "No description", image: "/placeholder.jpg" };
+ 
+ // Guard against Server-Side Rendering (DOMParser is browser-only)
+ if (typeof window === "undefined") {
+   return { title: "Loading...", excerpt: "Loading...", image: "/placeholder.jpg" };
+ }
+
  try {
-  const root = parse(html);
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
   return {
-   title: root.querySelector("h1,h2,h3,h4,h5,h6")?.text?.trim() || "No Title",
-   excerpt: root.querySelector("p")?.text?.trim() || "No description",
-   image: root.querySelector("img")?.getAttribute("src") || "/placeholder.jpg",
+   title: doc.querySelector("h1,h2,h3,h4,h5,h6")?.textContent?.trim() || "No Title",
+   excerpt: doc.querySelector("p")?.textContent?.trim() || "No description",
+   image: doc.querySelector("img")?.getAttribute("src") || "/placeholder.jpg",
   };
  } catch {
   return { title: "Invalid HTML", excerpt: "", image: "/placeholder.jpg" };
@@ -73,7 +80,10 @@ const BuzzPage = () => {
    const res = await fetch("/api/buzz/categories");
    if (res.ok) {
     const data = await res.json();
-    setAvailableCategories(data);
+    // SAFEGUARD: Ensure data is an array before setting
+    if (Array.isArray(data)) {
+      setAvailableCategories(data.filter(Boolean));
+    }
    }
   } catch (error) {
    console.error("Failed to load categories", error);
@@ -129,8 +139,9 @@ const BuzzPage = () => {
 
  const filteredItems = buzzItems
   .filter((item) => (filterCategory === "all" ? true : item.category === filterCategory))
+  // SAFEGUARD: Added optional chaining (item.name?.toLowerCase())
   .filter((item) =>
-   searchTerm.trim() ? item.name.toLowerCase().includes(searchTerm.toLowerCase()) : true
+   searchTerm.trim() ? item.name?.toLowerCase().includes(searchTerm.toLowerCase()) : true
   );
 
  return (

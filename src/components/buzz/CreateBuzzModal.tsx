@@ -63,10 +63,16 @@ export const CreateBuzzModal = ({
       const res = await fetch("/api/buzz/categories");
       if (res.ok) {
         const data = await res.json();
-        setCategories((prev) => {
-          const uniqueItems = new Set([...prev, ...data.map((c: string) => c.toLowerCase())]);
-          return Array.from(uniqueItems);
-        });
+        // SAFEGUARD: Ensure data is an array before mapping
+        if (Array.isArray(data)) {
+          setCategories((prev) => {
+            const uniqueItems = new Set([
+              ...prev, 
+              ...data.map((c: string) => c?.toLowerCase() || "")
+            ]);
+            return Array.from(uniqueItems).filter(Boolean);
+          });
+        }
       }
     } catch (error) {
       console.error("Failed to load categories", error);
@@ -86,11 +92,15 @@ export const CreateBuzzModal = ({
       if (editItem.category && !categories.includes(editItem.category.toLowerCase())) {
         setCategories((prev) => [...prev, editItem.category.toLowerCase()]);
       }
-      if (editItem.date) setDate(new Date(editItem.date));
+      // SAFEGUARD: Validate date object before setting
+      if (editItem.date) {
+        const parsedDate = new Date(editItem.date);
+        setDate(!isNaN(parsedDate.getTime()) ? parsedDate : undefined);
+      }
     } else if (open) {
       resetForm();
     }
-  }, [editItem, open, editorKey]);
+  }, [editItem, open, editorKey, categories]);
 
   const resetForm = () => {
     setName("");
@@ -248,9 +258,10 @@ export const CreateBuzzModal = ({
           </div>
           <div className="space-y-2">
             <Label>Date Of Event</Label>
+            {/* SAFEGUARD: Prevent invalid dates from crashing date-fns format */}
             <Input
               type="date"
-              value={date ? format(date, "yyyy-MM-dd") : ""}
+              value={date && !isNaN(date.getTime()) ? format(date, "yyyy-MM-dd") : ""}
               onChange={(e) => setDate(e.target.value ? new Date(e.target.value) : undefined)}
               className="w-full"
             />
