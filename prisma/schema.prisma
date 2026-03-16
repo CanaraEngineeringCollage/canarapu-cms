@@ -72,3 +72,17 @@ model Magazine {
   year      String?
   createdAt DateTime @default(now())
 }
+
+model AcademicTopper {
+  id        Int      @id @default(autoincrement())
+  name      String
+  year      String
+  imageUrl  String
+  createdAt DateTime @default(now())
+}
+
+model NonAcademicTopper {
+  id        Int      @id @default(autoincrement())
+  imageUrl  String
+  createdAt DateTime @default(now())
+}

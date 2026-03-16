@@ -2,15 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -34,13 +30,7 @@ interface CreateBuzzModalProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-export const CreateBuzzModal = ({
-  children,
-  onSuccess,
-  editItem,
-  open: controlledOpen,
-  onOpenChange: setControlledOpen,
-}: CreateBuzzModalProps) => {
+export const CreateBuzzModal = ({ children, onSuccess, editItem, open: controlledOpen, onOpenChange: setControlledOpen }: CreateBuzzModalProps) => {
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
@@ -53,10 +43,23 @@ export const CreateBuzzModal = ({
   const emailEditorRef = useRef<any>(null);
   const [isEditorLoaded, setIsEditorLoaded] = useState(false);
   const editorKey = useMemo(() => (editItem ? `edit-${editItem.id}` : "create"), [editItem]);
-  
+
   const [categories, setCategories] = useState(["sports", "cultural", "academic"]);
   const [newCategory, setNewCategory] = useState("");
   const [isSelectOpen, setIsSelectOpen] = useState(false);
+  const [editorReadyTimeout, setEditorReadyTimeout] = useState(false);
+
+  useEffect(() => {
+    if (!open || isEditorLoaded) {
+      setEditorReadyTimeout(false);
+      return;
+    }
+    // After 3 seconds, allow submission even if editor reports not loaded
+    const timer = setTimeout(() => {
+      setEditorReadyTimeout(true);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [open, isEditorLoaded]);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -66,10 +69,7 @@ export const CreateBuzzModal = ({
         // SAFEGUARD: Ensure data is an array before mapping
         if (Array.isArray(data)) {
           setCategories((prev) => {
-            const uniqueItems = new Set([
-              ...prev, 
-              ...data.map((c: string) => c?.toLowerCase() || "")
-            ]);
+            const uniqueItems = new Set([...prev, ...data.map((c: string) => c?.toLowerCase() || "")]);
             return Array.from(uniqueItems).filter(Boolean);
           });
         }
@@ -113,57 +113,73 @@ export const CreateBuzzModal = ({
       toast.error("Please fill in all fields");
       return;
     }
-    if (!emailEditorRef.current?.editor) {
-      toast.error("Editor is not ready yet");
-      return;
-    }
 
     setLoading(true);
 
-    emailEditorRef.current.editor.exportHtml(
-      async (data: { design: object | undefined; html: string | undefined }) => {
-        const safeDesign = JSON.parse(JSON.stringify(data.design ?? {}));
-        const safeHtml = data.html ?? "<div></div>";
+    // Try to export HTML from editor, with fallback if not ready
+    const exportHtml = () => {
+      return new Promise<{ design: object; html: string }>((resolve) => {
+        if (!emailEditorRef.current?.editor) {
+          resolve({ design: {}, html: "<div></div>" });
+          return;
+        }
 
         try {
-          if (editItem) {
-            const res = await fetch(`/api/buzz/${editItem.id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                name, category,
-                date: date.toISOString(),
-                content: safeHtml,
-                design: safeDesign,
-              }),
+          emailEditorRef.current.editor.exportHtml((data: { design: object | undefined; html: string | undefined }) => {
+            resolve({
+              design: data.design ?? {},
+              html: data.html ?? "<div></div>",
             });
-            if (!res.ok) throw new Error();
-            toast.success("Buzz updated successfully");
-          } else {
-            const res = await fetch("/api/buzz", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                name, category,
-                date: date.toISOString(),
-                content: safeHtml,
-                design: safeDesign,
-              }),
-            });
-            if (!res.ok) throw new Error();
-            toast.success("Buzz created successfully");
-          }
-
-          setOpen(false);
-          resetForm();
-          onSuccess?.();
+          });
         } catch {
-          toast.error(editItem ? "Failed to update buzz" : "Failed to create buzz");
-        } finally {
-          setLoading(false);
+          resolve({ design: {}, html: "<div></div>" });
         }
+      });
+    };
+
+    try {
+      const { design, html } = await exportHtml();
+      const safeDesign = JSON.parse(JSON.stringify(design));
+      const safeHtml = html;
+
+      if (editItem) {
+        const res = await fetch(`/api/buzz/${editItem.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            category,
+            date: date.toISOString(),
+            content: safeHtml,
+            design: safeDesign,
+          }),
+        });
+        if (!res.ok) throw new Error();
+        toast.success("Buzz updated successfully");
+      } else {
+        const res = await fetch("/api/buzz", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            category,
+            date: date.toISOString(),
+            content: safeHtml,
+            design: safeDesign,
+          }),
+        });
+        if (!res.ok) throw new Error();
+        toast.success("Buzz created successfully");
       }
-    );
+
+      setOpen(false);
+      resetForm();
+      onSuccess?.();
+    } catch {
+      toast.error(editItem ? "Failed to update buzz" : "Failed to create buzz");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getParsedDesign = useCallback(() => {
@@ -192,13 +208,10 @@ export const CreateBuzzModal = ({
           </div>
           <div className="space-y-2">
             <Label>Category</Label>
-            <Select 
-              value={category} 
-              onValueChange={setCategory}
-              open={isSelectOpen}
-              onOpenChange={setIsSelectOpen}
-            >
-              <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+            <Select value={category} onValueChange={setCategory} open={isSelectOpen} onOpenChange={setIsSelectOpen}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
               <SelectContent>
                 {categories.map((cat) => (
                   <SelectItem key={cat} value={cat}>
@@ -281,17 +294,20 @@ export const CreateBuzzModal = ({
               if (design && emailEditorRef.current?.editor) {
                 emailEditorRef.current.editor.loadDesign(design);
               } else if (editItem?.content) {
-                toast.message(
-                  "This buzz was created without editor design data. It can’t be loaded into the builder.",
-                  { description: "Saving will overwrite it with a new design." }
-                );
+                toast.message("This buzz was created without editor design data. It can’t be loaded into the builder.", {
+                  description: "Saving will overwrite it with a new design.",
+                });
               }
             }}
           />
         </div>
 
         <DialogFooter className="mt-4">
-          <Button onClick={handleSubmit} disabled={loading || !isEditorLoaded} className="w-32">
+          <Button
+            onClick={handleSubmit}
+            disabled={loading || (!isEditorLoaded && !editorReadyTimeout) || !name || !category || !date}
+            className="w-32"
+          >
             {loading ? <Loader2 className="animate-spin h-4 w-4" /> : editItem ? "Update Buzz" : "Save Buzz"}
           </Button>
         </DialogFooter>
