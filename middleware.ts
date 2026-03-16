@@ -10,26 +10,27 @@ export default async function middleware(req: any, event: any) {
   const { method } = req;
 
   // 1. PUBLIC BYPASS
-  const isPublicApi = 
-    pathname.startsWith("/api/inquiry") || 
-    pathname.startsWith("/api/exam-circulars") ||
-    pathname.startsWith("/api/events") ||
-    pathname.startsWith("/api/question-papers")|| // Added Question Papers
-    pathname.startsWith("/api/magazines")||
-    pathname.startsWith("/api/buzz")||
-    pathname.startsWith("/api/academic-toppers")||
-    pathname.startsWith("/api/non-academic-toppers");
+ const publicApis = [
+  "/api/inquiry",
+  "/api/exam-circulars",
+  "/api/events",
+  "/api/question-papers",
+  "/api/magazines",
+  "/api/buzz",
+  "/api/academic-toppers",
+  "/api/non-academic-toppers",
+];
 
+const isPublicApi = publicApis.some(route => pathname.startsWith(route));
 
-  if (isPublicApi) {
-    // Only allow GET and OPTIONS for these routes (and POST for inquiries)
-    const isReadRequest = method === "GET" || method === "OPTIONS";
-    const isInquiryPost = pathname.startsWith("/api/inquiry") && method === "POST";
+if (isPublicApi && (method === "GET" || method === "OPTIONS")) {
+  return NextResponse.next();
+}
 
-    if (isReadRequest || isInquiryPost) {
-      return NextResponse.next();
-    }
-  }
+// allow public POST for inquiry
+if (pathname.startsWith("/api/inquiry") && method === "POST") {
+  return NextResponse.next();
+}
 
   // 2. AUTHENTICATED ROUTES
   const authMiddleware = withAuth({
