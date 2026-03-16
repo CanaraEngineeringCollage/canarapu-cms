@@ -5,16 +5,31 @@ import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 
-// GET /api/academic-toppers — open
+// GET /api/academic-toppers
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+    
+    // NEW: Handle optimized unique years fetch directly from the DB
+    if (searchParams.get("action") === "getYears") {
+      const uniqueYears = await prisma.academicTopper.findMany({
+        distinct: ['year'],
+        select: { year: true },
+        orderBy: { year: 'desc' }
+      });
+      return NextResponse.json(uniqueYears.map(y => y.year));
+    }
+
     const page = parseInt(searchParams.get("page") ?? "1");
     const limit = parseInt(searchParams.get("limit") ?? "10");
     const year = searchParams.get("year") as string | null;
+    const search = searchParams.get("search") as string | null; // NEW: Search parameter
     const skip = (page - 1) * limit;
 
-    const where = year ? { year } : {};
+    // Build the query constraints
+    const where: any = {};
+    if (year) where.year = year;
+    if (search) where.name = { contains: search, mode: "insensitive" }; // Case-insensitive DB search
 
     const [items, total] = await prisma.$transaction([
       prisma.academicTopper.findMany({

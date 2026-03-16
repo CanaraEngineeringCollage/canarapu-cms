@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { Plus, Search, Award, Loader2, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ interface AcademicTopper {
 
 const AcademicToppersPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [yearFilter, setYearFilter] = useState("");
   const [toppers, setToppers] = useState<AcademicTopper[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,22 +33,27 @@ const AcademicToppersPage = () => {
   const [itemToDelete, setItemToDelete] = useState<AcademicTopper | null>(null);
   const [uniqueYears, setUniqueYears] = useState<string[]>([]);
 
+  // Debounce the search input by 300ms to prevent database spamming
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const fetchUniqueYears = useCallback(async () => {
     try {
-      const params = new URLSearchParams({ page: "1", limit: "1000" });
-      const res = await fetch(`/api/academic-toppers?${params.toString()}`);
+      // Pass the specific action flag instead of fetching 1000 full records
+      const res = await fetch(`/api/academic-toppers?action=getYears`);
       
       if (!res.ok) throw new Error("Failed to fetch years");
       
-      const data = await res.json();
-      const years = [...new Set((data.items ?? []).map((t: AcademicTopper) => t.year))] as string[];
-      setUniqueYears(years.sort().reverse());
+      const years = await res.json();
+      setUniqueYears(years);
     } catch (error) {
       console.error("Failed to fetch years:", error);
     }
   }, []);
 
-  const fetchPage = useCallback(async (page: number, limit: number, year?: string) => {
+  const fetchPage = useCallback(async (page: number, limit: number, year?: string, search?: string) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ 
@@ -54,9 +61,8 @@ const AcademicToppersPage = () => {
         limit: limit.toString() 
       });
       
-      if (year) {
-        params.set("year", year);
-      }
+      if (year) params.set("year", year);
+      if (search) params.set("search", search); // Include search parameter
 
       const res = await fetch(`/api/academic-toppers?${params.toString()}`);
       
@@ -72,9 +78,10 @@ const AcademicToppersPage = () => {
     setLoading(false);
   }, []);
 
+  // Use debouncedSearch in dependencies instead of direct searchQuery
   useEffect(() => {
-    fetchPage(currentPage, rowsPerPage, yearFilter || undefined);
-  }, [currentPage, rowsPerPage, yearFilter, fetchPage]);
+    fetchPage(currentPage, rowsPerPage, yearFilter || undefined, debouncedSearch || undefined);
+  }, [currentPage, rowsPerPage, yearFilter, debouncedSearch, fetchPage]);
 
   useEffect(() => {
     fetchUniqueYears();
@@ -96,7 +103,7 @@ const AcademicToppersPage = () => {
       const res = await fetch(`/api/academic-toppers/${itemToDelete.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       toast.success("Academic topper deleted");
-      fetchPage(currentPage, rowsPerPage, yearFilter || undefined);
+      fetchPage(currentPage, rowsPerPage, yearFilter || undefined, debouncedSearch || undefined);
       fetchUniqueYears();
     } catch {
       toast.error("Delete failed");
@@ -104,8 +111,6 @@ const AcademicToppersPage = () => {
     setDeleteModalOpen(false);
     setItemToDelete(null);
   };
-
-  const filteredToppers = toppers.filter((item) => item.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <div>
@@ -163,7 +168,7 @@ const AcademicToppersPage = () => {
           <div className="flex justify-center py-20">
             <Loader2 className="h-10 w-10 animate-spin text-success" />
           </div>
-        ) : filteredToppers.length === 0 ? (
+        ) : toppers.length === 0 ? (
           <p className="text-center text-muted-foreground py-10">No academic toppers found.</p>
         ) : (
           <>
@@ -178,10 +183,19 @@ const AcademicToppersPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredToppers.map((item) => (
+                  {/* Map directly over toppers since backend handles filtering */}
+                  {toppers.map((item) => (
                     <tr key={item.id} className="hover:bg-muted/50 border-b">
                       <td className="border p-4 text-center">
-                        <img src={item.imageUrl} alt={item.name} className="w-16 h-16 rounded-lg object-cover mx-auto shadow-sm" loading="lazy" />
+                        <div className="relative w-16 h-16 mx-auto">
+                          <Image 
+                            src={item.imageUrl} 
+                            alt={item.name} 
+                            fill
+                            className="rounded-lg object-cover shadow-sm"
+                            sizes="64px" 
+                          />
+                        </div>
                       </td>
                       <td className="border p-4">
                         <span className="font-medium line-clamp-2">{item.name}</span>
@@ -223,7 +237,7 @@ const AcademicToppersPage = () => {
         onOpenChange={setModalOpen}
         editItem={editItem}
         onSuccess={() => {
-          fetchPage(currentPage, rowsPerPage, yearFilter || undefined);
+          fetchPage(currentPage, rowsPerPage, yearFilter || undefined, debouncedSearch || undefined);
           fetchUniqueYears();
         }}
       />
