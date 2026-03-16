@@ -33,12 +33,11 @@ const AcademicToppersPage = () => {
 
   const fetchUniqueYears = useCallback(async () => {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
-      const yearsUrl = new URL(`/api/academic-toppers`, baseUrl || "http://localhost:3000");
-      yearsUrl.searchParams.set("page", "1");
-      yearsUrl.searchParams.set("limit", "1000");
-
-      const res = await fetch(yearsUrl.toString());
+      const params = new URLSearchParams({ page: "1", limit: "1000" });
+      const res = await fetch(`/api/academic-toppers?${params.toString()}`);
+      
+      if (!res.ok) throw new Error("Failed to fetch years");
+      
       const data = await res.json();
       const years = [...new Set((data.items ?? []).map((t: AcademicTopper) => t.year))] as string[];
       setUniqueYears(years.sort().reverse());
@@ -50,15 +49,19 @@ const AcademicToppersPage = () => {
   const fetchPage = useCallback(async (page: number, limit: number, year?: string) => {
     setLoading(true);
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
-      const apiUrl = new URL(`/api/academic-toppers`, baseUrl || "http://localhost:3000");
-      apiUrl.searchParams.set("page", page.toString());
-      apiUrl.searchParams.set("limit", limit.toString());
+      const params = new URLSearchParams({ 
+        page: page.toString(), 
+        limit: limit.toString() 
+      });
+      
       if (year) {
-        apiUrl.searchParams.set("year", year);
+        params.set("year", year);
       }
 
-      const res = await fetch(apiUrl.toString());
+      const res = await fetch(`/api/academic-toppers?${params.toString()}`);
+      
+      if (!res.ok) throw new Error("Failed to fetch data");
+      
       const data = await res.json();
       setToppers(data.items ?? []);
       setTotalPages(data.totalPages ?? 1);
