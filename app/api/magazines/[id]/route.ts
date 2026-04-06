@@ -37,3 +37,35 @@ export async function DELETE(
     return NextResponse.json({ error: 'Failed to delete magazine' }, { status: 500 });
   }
 }
+
+// PUT /api/magazines/[id] — protected
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { error } = await requireAuth(req);
+  if (error) return error;
+
+  try {
+    const { id: paramId } = await params;
+    const id = parseInt(paramId);
+    
+    // Only handling JSON requests for now (URL-based updates)
+    const body = await req.json();
+    const { title, fileUrl, year } = body;
+    
+    if (!title || !fileUrl || !year) {
+      return NextResponse.json({ error: 'title, fileUrl, and year are required' }, { status: 400 });
+    }
+
+    const magazine = await prisma.magazine.update({
+      where: { id },
+      data: { title, fileUrl, year },
+    });
+
+    return NextResponse.json(magazine);
+  } catch (error) {
+    console.error('Magazine PUT error:', error);
+    return NextResponse.json({ error: 'Failed to update magazine' }, { status: 500 });
+  }
+}

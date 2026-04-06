@@ -11,15 +11,25 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') ?? '1');
     const limit = parseInt(searchParams.get('limit') ?? '10');
+    const search = searchParams.get('search') ?? '';
     const skip = (page - 1) * limit;
+
+    const whereClause = search ? {
+      title: {
+        contains: search,
+      }
+    } : {};
 
     const [items, total] = await prisma.$transaction([
       prisma.magazine.findMany({
+        where: whereClause,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
       }),
-      prisma.magazine.count(),
+      prisma.magazine.count({
+        where: whereClause,
+      }),
     ]);
 
     return NextResponse.json({ items, total, totalPages: Math.ceil(total / limit), page });
@@ -41,11 +51,11 @@ export async function POST(req: NextRequest) {
       // URL-based magazine (no file upload)
       const body = await req.json();
       const { title, fileUrl, year } = body;
-      if (!title || !fileUrl) {
-        return NextResponse.json({ error: 'title and fileUrl are required' }, { status: 400 });
+      if (!title || !fileUrl || !year) {
+        return NextResponse.json({ error: 'title, fileUrl, and year are required' }, { status: 400 });
       }
       const magazine = await prisma.magazine.create({
-        data: { title, fileUrl, year: year ?? null },
+        data: { title, fileUrl, year },
       });
       return NextResponse.json(magazine, { status: 201 });
     }
@@ -53,12 +63,12 @@ export async function POST(req: NextRequest) {
     // Form-data file upload
     const formData = await req.formData();
     const title = formData.get('title') as string;
-    const year = formData.get('year') as string | null;
+    const year = formData.get('year') as string;
     const file = formData.get('file') as File | null;
     const coverFile = formData.get('cover') as File | null;
 
-    if (!title || !file) {
-      return NextResponse.json({ error: 'title and file are required' }, { status: 400 });
+    if (!title || !file || !year) {
+      return NextResponse.json({ error: 'title, file, and year are required' }, { status: 400 });
     }
 
     const uploadDir = path.join(process.cwd(), 'public', 'uploads');
@@ -78,7 +88,7 @@ export async function POST(req: NextRequest) {
     }
 
     const magazine = await prisma.magazine.create({
-      data: { title, fileUrl, coverUrl, year: year ?? null },
+      data: { title, fileUrl, coverUrl, year },
     });
 
     return NextResponse.json(magazine, { status: 201 });

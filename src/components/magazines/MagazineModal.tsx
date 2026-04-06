@@ -11,7 +11,7 @@ import { Loader2 } from 'lucide-react';
 interface MagazineModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editItem?: { id: number; url: string } | null;
+  editItem?: { id: number; title: string; url: string; year?: string } | null;
   onSuccess?: () => void;
 }
 
@@ -23,7 +23,9 @@ export const MagazineModal = ({ open, onOpenChange, editItem, onSuccess }: Magaz
 
   useEffect(() => {
     if (editItem) {
-      setUrl(editItem.url);
+      setTitle(editItem.title || '');
+      setUrl(editItem.url || '');
+      setYear(editItem.year || '');
     } else {
       setTitle('');
       setUrl('');
@@ -36,27 +38,30 @@ export const MagazineModal = ({ open, onOpenChange, editItem, onSuccess }: Magaz
       toast.error("Magazine URL is required");
       return;
     }
+    if (!year) {
+      toast.error("Magazine year is required");
+      return;
+    }
 
     setLoading(true);
     try {
       if (editItem) {
-        // For edit: DELETE old and POST new (or we can extend API with PUT /api/magazines/[id])
-        const res = await fetch(`/api/magazines/${editItem.id}`, { method: 'DELETE' });
+        // PUT request for edit
+        const res = await fetch(`/api/magazines/${editItem.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: title || url, fileUrl: url, year: year || null }),
+        });
         if (!res.ok) throw new Error();
+      } else {
+        // POST new magazine with URL as fileUrl
+        const res2 = await fetch('/api/magazines', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: title || url, fileUrl: url, year: year || null }),
+        });
+        if (!res2.ok) throw new Error();
       }
-
-      // POST new magazine with URL as fileUrl
-      const formData = new FormData();
-      formData.append('title', title || url);
-      formData.append('year', year);
-
-      // Since it's a URL-based magazine, we pass the URL directly via json
-      const res2 = await fetch('/api/magazines', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title || url, fileUrl: url, year: year || null }),
-      });
-      if (!res2.ok) throw new Error();
 
       toast.success(editItem ? "Magazine updated successfully" : "Magazine added successfully");
       onOpenChange(false);
@@ -91,7 +96,7 @@ export const MagazineModal = ({ open, onOpenChange, editItem, onSuccess }: Magaz
             <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." />
           </div>
           <div className="space-y-2">
-            <Label>Year (optional)</Label>
+            <Label>Year</Label>
             <Input value={year} onChange={(e) => setYear(e.target.value)} placeholder="e.g. 2024" />
           </div>
         </div>
