@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 const navigationItems = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Inquiry", href: "/inquiry", icon: MessageSquare },
-  { name: "Buzz", href: "/buzz", icon: Megaphone },
+  { name: "Campus Buzz", href: "/buzz", icon: Megaphone },
   { name: "Events", href: "/events", icon: Calendar },
   { name: "Question Bank", href: "/question-bank", icon: FileQuestion },
   { name: "Exam Circulars", href: "/exam-circulars", icon: FileText },

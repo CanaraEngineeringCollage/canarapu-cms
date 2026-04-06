@@ -150,7 +150,7 @@ const BuzzPage = () => {
         <div>
           <h1 className="page-header flex items-center gap-3">
             <Megaphone className="h-8 w-8 text-primary" />
-            Buzz
+           Campus Buzz
           </h1>
           <p className="text-muted-foreground">Manage announcements and buzz items.</p>
         </div>
