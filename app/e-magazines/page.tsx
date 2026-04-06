@@ -142,7 +142,7 @@ const EMagazinesPage = () => {
     </div>
    ) : magazines.length > 0 ? (
     <>
-     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
       {magazines.map((magazine) => (
        <div key={magazine.id} className="rounded-xl border border-border/50 bg-card overflow-hidden group hover:shadow-lg transition-all duration-300">
         <div className="w-full h-64 bg-muted relative overflow-hidden">
